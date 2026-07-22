@@ -1,0 +1,1140 @@
+# PRD: AI-Hosted Browser Party Game Platform
+
+## 1. Product Summary
+
+This product is a Kahoot/Jackbox-style browser game platform where one person hosts a game on a shared main screen, and players join using their phones through a room code.
+
+The platform will support multiple party/classroom/bar-style games over time, but the MVP will focus on one polished game: **Buzz-in Trivia**.
+
+The main differentiator is a **virtual AI host** that controls the flow of the game, reads questions, reacts to players, judges typed answers, and creates a funny PG-safe game show experience using an LLM and ElevenLabs voice.
+
+Only hosts need accounts. Players do not need accounts.
+
+---
+
+## 2. Product Goals
+
+### Primary Goals
+
+* Build a fast, fun, real-time browser game experience.
+* Let players join easily with a room code and phone.
+* Let hosts configure and launch games from a main screen.
+* Support both **Self Host** and **Virtual AI Host** modes.
+* Build a flexible architecture where new games can be added later.
+* Keep costs controlled through plan limits, rate limits, and AI usage caps.
+* Launch with one strong MVP game before expanding.
+
+### Business Goals
+
+* Offer a limited free tier.
+* Monetize through subscriptions.
+* Make AI hosting a paid feature.
+* Support parties, classrooms, friends, bars, and remote Discord screen-share play.
+
+---
+
+## 3. Target Users
+
+### Primary Users
+
+* Friend groups playing locally
+* Party hosts
+* Classroom teachers
+* Bar/event hosts
+* Discord groups using screen share
+
+### User Roles
+
+| Role             | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| Account Host     | Logged-in user who creates and manages game rooms |
+| Main Screen      | Shared display where the game is shown            |
+| Player           | Joins using room code, username, and avatar       |
+| Self Host Player | A selected player who controls the game flow      |
+| Virtual Host     | AI host that controls the game flow               |
+
+---
+
+## 4. MVP Scope
+
+### MVP Game
+
+The MVP will include:
+
+```text
+Buzz-in Trivia
+```
+
+### MVP Hosting Modes
+
+```text
+Self Host
+Virtual AI Host
+```
+
+### MVP Play Format
+
+```text
+Free for all
+```
+
+Teams will be designed into the architecture but can be built after the core trivia loop is stable.
+
+---
+
+## 5. Non-Goals for MVP
+
+These are not required for v1:
+
+* Multiple games at launch
+* Full remote video/chat features
+* Native mobile apps
+* Public matchmaking
+* Team mode
+* Advanced classroom admin tools
+* Custom AI host voices
+* Multiple AI personalities
+* User-generated game marketplace
+* On-screen AI character/avatar
+* Complex question explanations or hints
+
+---
+
+## 6. Core User Flow
+
+### Host Flow
+
+1. Host signs in.
+2. Host clicks “Create Game.”
+3. Host selects a game.
+4. Host configures game settings.
+5. Host launches room.
+6. Main screen shows room code.
+7. Players join using their phones.
+8. Host starts game when ready.
+9. Game runs through Self Host or Virtual Host mode.
+10. Final podium appears with winners.
+
+### Player Flow
+
+1. Player goes to join page.
+2. Player enters room code.
+3. Player enters username.
+4. Player selects avatar.
+5. Player enters lobby.
+6. Player waits for game to start.
+7. Player uses phone as controller during game.
+8. Player sees score, place, and game state.
+9. Player leaves after game ends.
+
+---
+
+## 7. Game Configuration
+
+When a host selects Buzz-in Trivia, they should be taken to a configuration screen.
+
+### Required Settings
+
+| Setting                   | Description                  |
+| ------------------------- | ---------------------------- |
+| Topic                     | Trivia topic or premade pack |
+| Difficulty                | Easy, Medium, Hard           |
+| Number of Questions       | Example: 5, 10, 15, 25       |
+| Max Players               | Based on plan                |
+| Host Mode                 | Self Host or Virtual Host    |
+| Auto Skip                 | On or Off                    |
+| Auto Skip Time            | Example: 15s, 30s, 45s       |
+| Buzz Order Retries        | On or Off                    |
+| Max Retries               | Max 5                        |
+| Answer Judging Strictness | Normal by default            |
+
+### Future Settings
+
+| Setting               | Description           |
+| --------------------- | --------------------- |
+| Teams or Free for All | Team mode added later |
+| Game Speed            | Slow, Normal, Fast    |
+| AI Host Personality   | Future paid feature   |
+| Custom Branding       | Future paid feature   |
+
+---
+
+## 8. Subscription and Feature Gating
+
+### Free Tier
+
+| Feature                | Free Tier             |
+| ---------------------- | --------------------- |
+| Host account           | Yes                   |
+| Self Host              | Yes                   |
+| Virtual AI Host        | No                    |
+| Max players            | 5                     |
+| Max game length        | 30 minutes            |
+| Question packs         | Limited premade packs |
+| Custom questions       | No                    |
+| AI question generation | No                    |
+| Teams                  | No                    |
+| Number of questions    | Limited               |
+
+### Paid Tier
+
+| Feature                     | Paid Tier |
+| --------------------------- | --------- |
+| More players                | Yes       |
+| Longer games                | Yes       |
+| Virtual AI Host             | Yes       |
+| AI-generated question packs | Yes       |
+| Custom question packs       | Yes       |
+| More premade packs          | Yes       |
+| Teams                       | Later     |
+| More games                  | Later     |
+
+---
+
+## 9. Buzz-in Trivia Game Flow
+
+### Self Host Mode
+
+1. Main screen says waiting for host.
+2. Host phone shows preview of next question.
+3. Host taps “Display Question.”
+4. Main screen displays the question.
+5. Buzzing opens.
+6. Players buzz using their phones.
+7. Main screen shows buzz animation and first buzzer.
+8. Player answers out loud.
+9. Host marks answer as Correct or Incorrect.
+10. If correct:
+
+    * points are awarded
+    * correct animation plays
+    * answer is revealed
+    * scoreboard appears
+11. If incorrect:
+
+    * incorrect animation plays
+    * if retries are on, next buzzer gets a chance
+    * if retries are off, answer is revealed
+12. Game moves to next question.
+13. Final podium appears at game end.
+
+### Virtual Host Mode
+
+1. AI host starts the game with a short intro.
+2. AI host introduces or reads the question.
+3. Main screen displays the question.
+4. Buzzing opens.
+5. Player buzzes.
+6. AI host reacts to player buzz.
+7. Player types answer on phone.
+8. System checks answer locally first.
+9. If ambiguous, LLM judges if answer is close enough.
+10. AI host says a funny PG-safe correct or incorrect line.
+11. Answer is revealed.
+12. Scoreboard appears.
+13. AI host continues to next question.
+14. Final podium appears at game end.
+
+---
+
+## 10. Game State Machine
+
+The game should be controlled by a server-authoritative state machine.
+
+### Trivia States
+
+```text
+LOBBY
+CONFIGURATION
+HOST_SELECTION
+GENERATING_QUESTIONS
+READY_TO_START
+GAME_INTRO
+QUESTION_PREVIEW
+QUESTION_DISPLAYED
+BUZZ_OPEN
+PLAYER_BUZZED
+PLAYER_ANSWERING
+JUDGING_ANSWER
+ANSWER_CORRECT
+ANSWER_WRONG
+RETRY_NEXT_BUZZER
+SHOW_ANSWER
+SCOREBOARD
+NEXT_QUESTION
+GAME_OVER
+```
+
+### Core Game Actions
+
+```text
+CREATE_ROOM
+JOIN_ROOM
+LEAVE_ROOM
+KICK_PLAYER
+SELECT_HOST
+START_GAME
+DISPLAY_QUESTION
+OPEN_BUZZING
+BUZZ_IN
+SUBMIT_ANSWER
+MARK_CORRECT
+MARK_INCORRECT
+SKIP_QUESTION
+NEXT_BUZZER
+SHOW_ANSWER
+SHOW_SCOREBOARD
+NEXT_QUESTION
+END_GAME
+```
+
+Both Self Host and Virtual Host should use the same game engine. The only difference is which controller triggers the actions.
+
+---
+
+## 11. Host Controller Architecture
+
+The system should not build two separate versions of the same game.
+
+Instead, build:
+
+```text
+Trivia Game Engine
+SelfHostController
+VirtualHostController
+```
+
+The game engine owns:
+
+* game state
+* scoring
+* buzz order
+* question index
+* player state
+* answer reveal
+* game completion
+
+The controller owns:
+
+* who advances the game
+* when host lines are played
+* whether answers are typed or spoken
+* whether answer judging is manual or automatic
+
+---
+
+## 12. AI Host Moments
+
+The AI host should only speak during controlled moments.
+
+### Trivia AI Moments
+
+```text
+game_intro
+question_intro
+question_read
+buzz_received
+ask_player_answer
+answer_correct
+answer_wrong
+retry_next_player
+no_buzz_timeout
+show_answer
+scoreboard_reveal
+final_question
+game_over_winner
+game_over_tie
+```
+
+### AI Host Rules
+
+The AI host must:
+
+* stay PG-safe
+* avoid swearing
+* avoid offensive jokes
+* avoid protected-class insults
+* keep lines short
+* avoid rambling
+* not expose hidden answers early
+* not act like a chatbot
+* sound like a fun game show host
+* use player names when appropriate
+* keep the game moving
+
+---
+
+## 13. Voice System
+
+The virtual host will use ElevenLabs for voice.
+
+### Voice Strategy
+
+Use a hybrid voice system:
+
+```text
+Pre-generated common lines
+Live-generated player-specific lines
+Cached voice clips
+```
+
+### Pre-Generated Examples
+
+```text
+Welcome to the game.
+Here comes the next question.
+Time is up.
+Let's check the scores.
+Final question.
+Game over.
+```
+
+### Live-Generated Examples
+
+```text
+Parm buzzes in like he has been waiting his whole life for this.
+Sarah got it right and now everyone else is suddenly nervous.
+```
+
+### Voice Requirements
+
+* Every generated voice line should be cached.
+* Common lines should never be regenerated repeatedly.
+* Main screen should show captions.
+* Main screen should allow skipping voice playback.
+* Host line length should be capped.
+* AI voice usage should be tracked per account.
+
+---
+
+## 14. Answer Judging
+
+Virtual Host mode requires typed answers.
+
+### Judging Pipeline
+
+1. Normalize user answer.
+2. Check exact match locally.
+3. Check accepted answers locally.
+4. Run local fuzzy comparison.
+5. If still ambiguous, call LLM judge.
+6. Store result.
+7. Award points if correct.
+
+### Local Normalization
+
+Normalize by:
+
+```text
+lowercasing
+trimming whitespace
+removing punctuation
+removing extra spaces
+optionally removing "the", "a", "an"
+```
+
+### LLM Fallback
+
+The LLM should only be used when the local system is unsure.
+
+Prompt goal:
+
+```text
+Given the question, correct answer, accepted answers, and player answer, decide if the player answer should count as correct.
+Return only correct or incorrect.
+```
+
+### Stored Result
+
+Each answer should store:
+
+```text
+submitted_answer
+judged_result
+judged_by
+confidence
+player_id
+question_id
+created_at
+```
+
+Possible `judged_by` values:
+
+```text
+local_exact
+local_accepted_answer
+local_fuzzy
+llm
+manual_host
+```
+
+---
+
+## 15. Buzz Order Retries
+
+If Buzz Order Retries are enabled:
+
+1. Server records buzz order.
+2. First buzzer answers.
+3. If wrong, the next buzzer gets a chance.
+4. Repeat until max retries are reached.
+5. Max retries should be capped at 5.
+6. If no one gets it correct, reveal answer.
+
+### Buzz Storage
+
+```text
+buzzes
+- id
+- session_id
+- question_id
+- player_id
+- server_received_at
+- buzz_order
+- used_attempt
+```
+
+The server must use server time, not player device time.
+
+---
+
+## 16. Scoring
+
+Default scoring:
+
+```text
+First correct answer: 100 points
+Second retry correct: 75 points
+Third retry correct: 50 points
+Fourth retry correct: 25 points
+Fifth retry correct: 10 points
+Wrong answer: 0 points
+No answer: 0 points
+```
+
+This can be adjusted later.
+
+---
+
+## 17. Player Phone UX
+
+### Player Screens
+
+```text
+Join Room
+Enter Username
+Choose Avatar
+Lobby
+Waiting For Question
+Buzz Button
+Answer Input
+Waiting For Result
+Scoreboard
+Game Over
+```
+
+### In-Game Phone UI
+
+The player phone should show:
+
+* current score
+* current place
+* game state
+* large buzz button
+* answer input when required
+* cooldown state
+* game over leave button
+
+### Buzz Button Rules
+
+* disabled when buzzing is closed
+* disabled after player has buzzed
+* 2-second visual cooldown
+* cannot be spammed
+* shows buzz position when relevant
+
+Example:
+
+```text
+You buzzed 3rd
+Waiting for host
+Answer now
+Too late
+```
+
+---
+
+## 18. Main Screen UX
+
+The main screen should be simple, clean, and game-focused.
+
+### Main Screen Elements
+
+* room code
+* player avatars
+* current question
+* timer
+* buzz animation
+* current answering player
+* answer reveal
+* scoreboard
+* AI host captions
+* podium at game end
+
+### Main Screen Rules
+
+* no chatbot interface
+* no large AI character required
+* animations should feel fun but not cluttered
+* captions should appear at bottom
+* question should be large and readable
+* room code should be easy to see
+* should work well over Discord screen share
+
+---
+
+## 19. Lobby UX
+
+### Main Screen Lobby
+
+The main screen lobby should show:
+
+* room code
+* joined players
+* avatars
+* player names
+* kick controls
+* start button
+* selected host if Self Host mode
+* team assignment later
+
+### Player Lobby
+
+Player phone should show:
+
+* chosen avatar
+* username
+* waiting message
+* leave button
+
+---
+
+## 20. End Game UX
+
+At the end of the game, show:
+
+* 3-person podium
+* confetti
+* winner announcement
+* final scores
+* tie handling
+
+### Tie Handling
+
+If multiple players tie for a podium place:
+
+* cycle through tied player names
+* cycle through tied player avatars
+* AI host announces tie if Virtual Host mode is enabled
+
+---
+
+## 21. Technical Architecture
+
+### Recommended Stack
+
+```text
+Next.js
+TypeScript
+Tailwind CSS
+shadcn/ui
+Framer Motion
+Supabase Auth
+Supabase Postgres
+Supabase Realtime
+Supabase Storage
+Stripe Billing
+Upstash Redis
+LLM provider
+ElevenLabs
+Vercel
+```
+
+### Architecture Principles
+
+* server is source of truth
+* clients only display state
+* no answer data sent to players before reveal
+* all game actions validated server-side
+* all expensive AI actions gated by plan and usage limit
+* all realtime updates sync from official game state
+* all AI output moderated before voice generation
+
+---
+
+## 22. Live State Architecture
+
+Use three layers:
+
+```text
+Postgres = official game state
+Realtime = live updates
+Broadcast/Presence = temporary events
+```
+
+### Store in Postgres
+
+```text
+rooms
+players
+host selection
+game session
+current state
+current question index
+scores
+buzz order
+answers
+kicked players
+settings
+usage logs
+```
+
+### Use Realtime For
+
+```text
+question displayed
+buzz received
+answer revealed
+score updated
+game state changed
+player joined
+player left
+```
+
+### Use Broadcast/Presence For
+
+```text
+online status
+temporary animations
+confetti
+host line started
+host line skipped
+typing state
+```
+
+---
+
+## 23. Database Tables
+
+### MVP Tables
+
+```text
+profiles
+subscriptions
+usage_limits
+rooms
+room_players
+game_sessions
+game_questions
+buzzes
+answers
+scores
+ai_events
+voice_clips
+question_packs
+```
+
+### rooms
+
+```text
+id
+host_user_id
+room_code
+status
+created_at
+expires_at
+plan_tier
+```
+
+### room_players
+
+```text
+id
+room_id
+username
+avatar_id
+is_kicked
+is_host
+joined_at
+last_seen_at
+```
+
+### game_sessions
+
+```text
+id
+room_id
+game_type
+host_mode
+current_state
+current_question_index
+current_player_id
+settings
+started_at
+ended_at
+updated_at
+```
+
+### game_questions
+
+```text
+id
+session_id
+question_index
+question_text
+correct_answer
+accepted_answers
+difficulty
+source
+```
+
+### buzzes
+
+```text
+id
+session_id
+question_id
+player_id
+server_received_at
+buzz_order
+used_attempt
+```
+
+### answers
+
+```text
+id
+session_id
+question_id
+player_id
+submitted_answer
+is_correct
+judged_by
+confidence
+created_at
+```
+
+### scores
+
+```text
+id
+session_id
+player_id
+score
+updated_at
+```
+
+### ai_events
+
+```text
+id
+session_id
+moment
+input_payload
+output_text
+moderation_status
+voice_clip_id
+created_at
+```
+
+### voice_clips
+
+```text
+id
+cache_key
+text
+voice_provider
+voice_id
+audio_url
+created_at
+```
+
+---
+
+## 24. Security and Abuse Prevention
+
+### Required Limits
+
+Track and enforce:
+
+```text
+max players per room
+max rooms per day
+max game length
+max questions per game
+max AI host games per month
+max generated question packs per month
+max LLM answer judgments per game
+max ElevenLabs characters per month
+max username length
+max answer length
+max custom question length
+```
+
+### Moderation Required For
+
+```text
+usernames
+typed answers
+custom questions
+AI-generated questions
+AI host output
+anonymous submissions in future games
+```
+
+### Anti-Abuse Rules
+
+* host must be authenticated
+* players use temporary session IDs
+* room codes expire
+* kicked players cannot rejoin with same session
+* rate limit buzz attempts
+* rate limit answer submissions
+* rate limit room creation
+* rate limit AI requests
+* never trust client timestamps
+* never expose hidden answers to players
+* validate all game actions server-side
+
+---
+
+## 25. AI Question Generation
+
+Paid users can generate a pack before the game starts.
+
+### Flow
+
+1. Host selects topic.
+2. Host selects difficulty.
+3. Host selects number of questions.
+4. Server checks subscription and usage.
+5. Server sends controlled prompt to LLM.
+6. LLM returns structured JSON.
+7. Server validates questions.
+8. Server stores questions privately.
+9. Game starts.
+
+### Required Question Format
+
+```json
+{
+  "question": "What planet is known as the Red Planet?",
+  "answer": "Mars",
+  "acceptedAnswers": ["mars", "the planet mars"],
+  "difficulty": "easy"
+}
+```
+
+### Rules
+
+* no hints
+* no explanations
+* no offensive content
+* no duplicate questions in same pack
+* no answer sent to player devices before reveal
+* generated questions should be stored only server-side
+
+---
+
+## 26. Analytics
+
+Track:
+
+```text
+rooms created
+games started
+games completed
+average players per room
+average game duration
+most played question topics
+AI host games played
+AI lines generated
+ElevenLabs characters used
+LLM judgments used
+free to paid conversion
+drop-off during setup
+drop-off during lobby
+drop-off during game
+```
+
+---
+
+## 27. MVP Acceptance Criteria
+
+The MVP is successful when:
+
+* host can sign up and log in
+* host can create a trivia room
+* players can join by room code
+* players can choose username and avatar
+* lobby updates in realtime
+* host can start game
+* questions display correctly
+* players can buzz in
+* buzz order is server-authoritative
+* self host can mark answers correct or incorrect
+* virtual host can run the game flow
+* typed answers can be judged
+* local answer checking works before LLM fallback
+* scores update correctly
+* answer reveal works
+* scoreboard works
+* final podium works
+* room expires properly
+* free tier limits are enforced
+* paid AI features are gated
+* AI and voice usage is logged
+* hidden answers are never exposed early to players
+
+---
+
+## 28. Build Phases
+
+### Phase 1: Core Platform
+
+```text
+Next.js setup
+Supabase setup
+auth
+room creation
+room code joining
+player lobby
+avatar selection
+main screen
+phone screen
+realtime updates
+kick player
+basic room expiry
+```
+
+### Phase 2: Self-Hosted Trivia
+
+```text
+trivia configuration
+premade question packs
+question preview
+display question
+buzz button
+buzz order
+manual correct/incorrect
+score system
+answer reveal
+scoreboard
+podium
+```
+
+### Phase 3: AI-Hosted Trivia
+
+```text
+AI host moments
+LLM-generated host lines
+ElevenLabs voice
+voice caching
+typed answer input
+local answer checking
+LLM fallback judging
+auto skip
+AI-controlled game flow
+usage tracking
+```
+
+### Phase 4: Subscriptions
+
+```text
+Stripe checkout
+Stripe customer portal
+Stripe webhooks
+free tier limits
+paid tier limits
+AI feature gates
+usage dashboard
+```
+
+### Phase 5: More Games
+
+Future games:
+
+```text
+Majority Would You Rather
+Two Truths and a Lie
+Two Lies and a Truth
+Who Did It
+```
+
+---
+
+## 29. Future Game Concepts
+
+### Majority Would You Rather
+
+Players guess what the majority or selected player will choose.
+
+For teams:
+
+* players guess what the other team will choose
+* points awarded for correct prediction
+
+### Two Truths and a Lie
+
+A player submits two truths and one lie. Other players guess the lie.
+
+Variation:
+
+```text
+Two Lies and a Truth
+```
+
+### Who Did It
+
+Players anonymously submit something they have done or think. The group guesses who submitted it.
+
+This game will require stronger moderation because of anonymous input.
+
+---
+
+## 30. Open Decisions
+
+These should be decided before development starts:
+
+1. Final product name
+2. First AI host name
+3. Exact AI host personality
+4. First visual style
+5. Free tier monthly game limit
+6. Paid tier player limits
+7. Paid tier price
+8. Exact LLM provider
+9. Exact ElevenLabs voice
+10. Initial premade question pack topics
+11. Whether teams are included in v1 or v1.5
+12. Whether AI host is available during beta for free testing
+
+---
+
+## 31. Recommended MVP Positioning
+
+The product should be positioned as:
+
+```text
+A browser-based party game platform with a live AI game show host.
+```
+
+The first version should focus on doing one thing extremely well:
+
+```text
+AI-hosted Buzz-in Trivia for parties, classrooms, bars, and friend groups.
+```
+
+The MVP should feel fast, funny, simple, and polished.
+
+The AI host is the hook. The clean game engine is the foundation.

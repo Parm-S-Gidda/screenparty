@@ -1,0 +1,441 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0.02 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.02 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.02 285);
+  --primary: oklch(0.55 0.24 293);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.01 286);
+  --secondary-foreground: oklch(0.21 0.02 285);
+  --muted: oklch(0.96 0.01 286);
+  --muted-foreground: oklch(0.55 0.02 285);
+  --accent: oklch(0.96 0.01 286);
+  --accent-foreground: oklch(0.21 0.02 285);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.005 286);
+  --input: oklch(0.92 0.005 286);
+  --ring: oklch(0.55 0.24 293);
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: oklch(0.17 0.03 285);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.035 285);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.035 285);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.7 0.2 293);
+  --primary-foreground: oklch(0.145 0.02 285);
+  --secondary: oklch(0.27 0.035 285);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.27 0.035 285);
+  --muted-foreground: oklch(0.71 0.02 285);
+  --accent: oklch(0.27 0.035 285);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.7 0.2 293);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* every clickable thing gets a pointer (Tailwind v4 preflight defaults
+     buttons to cursor:default) */
+  a,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  select,
+  summary,
+  [data-slot="select-trigger"]:not([data-disabled]),
+  [data-slot="select-item"],
+  [data-slot="switch"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [data-slot="select-trigger"][data-disabled] {
+    cursor: not-allowed;
+  }
+}
+
+/* ===========================================================================
+   CARTOON STAGE THEME, in-game screens only (host screen + player phone).
+   `.stage` remaps the shadcn tokens so existing utility classes re-skin to a
+   hand-drawn game-show look, then the utilities below add the paper, ink,
+   tape, and stamp treatments. Dashboard/marketing never use .stage.
+   ======================================================================== */
+
+.stage {
+  /* palette: screen-printed, flat, warm */
+  --ink: #221f30;
+  --ink-soft: #35304a;
+  --cream: #f5ecd4;
+  --paper: #eaddbd;
+  --mustard: #f0b429;
+  --tomato: #e2493b;
+  --teal: #2fa8a0;
+  --coral: #ee7c8e;
+  --grape: #6f5aa0;
+  --leaf: #76b041;
+  --sky: #5aa9e6;
+  --stage-bg: #191624;
+
+  /* remap design tokens so existing classes re-skin inside the stage */
+  --background: var(--stage-bg);
+  --foreground: var(--cream);
+  --card: var(--cream);
+  --card-foreground: var(--ink);
+  --popover: var(--cream);
+  --popover-foreground: var(--ink);
+  --primary: var(--mustard);
+  --primary-foreground: var(--ink);
+  --secondary: var(--paper);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper);
+  --muted-foreground: #c9bfa4;
+  --accent: var(--teal);
+  --accent-foreground: var(--cream);
+  --destructive: var(--tomato);
+  --destructive-foreground: var(--cream);
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--mustard);
+
+  background-color: var(--stage-bg);
+  color: var(--cream);
+}
+
+/* textured dark backdrop: faint halftone + spotlight rays + paper grain */
+.stage-backdrop {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--stage-bg);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(245, 236, 212, 0.07), transparent 60%),
+    radial-gradient(rgba(245, 236, 212, 0.05) 1px, transparent 1.6px);
+  background-size: 100% 100%, 26px 26px;
+}
+
+/* fonts */
+.font-display {
+  font-family: var(--font-display), "Comic Sans MS", cursive;
+  letter-spacing: 0.03em;
+  -webkit-text-stroke: 0;
+}
+.font-hand {
+  font-family: var(--font-hand), "Comic Sans MS", cursive;
+}
+.font-score {
+  font-family: var(--font-score), var(--font-geist-sans), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* physical paper panels: thick ink outline, uneven corners, hard shadow */
+.panel {
+  background: var(--cream);
+  color: var(--ink);
+  border: 5px solid var(--ink);
+  border-radius: 1.1rem 1.5rem 1rem 1.6rem / 1.5rem 1rem 1.6rem 1.1rem;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.55);
+  position: relative;
+}
+.panel-paper {
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 0.8rem 1.1rem 0.7rem 1.2rem / 1.1rem 0.7rem 1.2rem 0.8rem;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+.panel-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(34, 31, 48, 0.1) 1px, transparent 1.4px);
+  background-size: 9px 9px;
+}
+
+/* nameplate: dark sign under a mascot */
+.nameplate {
+  background: var(--ink);
+  color: var(--cream);
+  border: 3px solid var(--cream);
+  border-radius: 0.55rem 0.75rem 0.5rem 0.8rem;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* physical button: hard shadow that depresses on press */
+.btn-rough {
+  font-family: var(--font-display), cursive;
+  letter-spacing: 0.04em;
+  background: var(--mustard);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 0.9rem 1.2rem 0.8rem 1.3rem / 1.2rem 0.8rem 1.3rem 0.9rem;
+  box-shadow: 0 6px 0 var(--ink), 0 10px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(0);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  user-select: none;
+}
+.btn-rough:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-rough:active:not(:disabled) {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 var(--ink), 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.btn-rough:disabled {
+  background: var(--paper);
+  color: rgba(34, 31, 48, 0.45);
+  box-shadow: 0 4px 0 var(--ink-soft);
+}
+
+/* rubber stamp result label */
+.stamp {
+  font-family: var(--font-display), cursive;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 6px solid currentColor;
+  border-radius: 0.9rem 0.5rem 1rem 0.6rem;
+  padding: 0.35em 0.7em 0.15em;
+  transform: rotate(-7deg);
+  background: var(--cream);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.45);
+  animation: stamp-in 380ms cubic-bezier(0.2, 2, 0.4, 1) both;
+}
+
+/* skin shadcn primitives that appear inside the stage */
+.stage [data-slot="button"] {
+  font-family: var(--font-display), cursive;
+  letter-spacing: 0.04em;
+  border: 3px solid var(--ink);
+  border-radius: 0.7rem 0.95rem 0.6rem 1rem;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+  height: auto;
+  min-height: 2.5rem;
+}
+.stage [data-slot="button"]:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.stage [data-slot="card"] {
+  border: 4px solid var(--ink);
+  border-radius: 1rem 1.3rem 0.9rem 1.4rem;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+}
+.stage [data-slot="badge"] {
+  font-family: var(--font-score), sans-serif;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+.stage [data-slot="card-title"] {
+  font-family: var(--font-display), cursive;
+  letter-spacing: 0.04em;
+  font-weight: 400;
+}
+.stage [data-slot="label"] {
+  font-family: var(--font-score), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+.stage input[data-slot="input"],
+.stage [data-slot="select-trigger"] {
+  background: #fffdf3;
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 0.6rem 0.8rem 0.55rem 0.85rem;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  min-height: 2.5rem;
+}
+.stage input[data-slot="input"]::placeholder {
+  color: rgba(34, 31, 48, 0.4);
+}
+.stage [data-slot="select-content"] {
+  border: 3px solid var(--ink);
+  border-radius: 0.7rem 0.9rem 0.6rem 1rem;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
+}
+.stage [data-slot="switch"] {
+  border: 2px solid var(--ink);
+}
+
+/* keyframes, short and snappy */
+@keyframes stamp-in {
+  0% {
+    transform: scale(2.4) rotate(-18deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.92) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-7deg);
+  }
+}
+@keyframes shake-hard {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  15% { transform: translate(-8px, 3px) rotate(-0.6deg); }
+  30% { transform: translate(9px, -4px) rotate(0.5deg); }
+  45% { transform: translate(-6px, -3px) rotate(-0.4deg); }
+  60% { transform: translate(6px, 4px) rotate(0.3deg); }
+  80% { transform: translate(-3px, 1px) rotate(0); }
+}
+@keyframes wobble-slow {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50% { transform: rotate(1.2deg); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes pop-in {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@keyframes squash-cheer {
+  0%, 100% { transform: scaleX(1) scaleY(1); }
+  30% { transform: scaleX(1.15) scaleY(0.82); }
+  60% { transform: scaleX(0.9) scaleY(1.12) translateY(-6px); }
+}
+@keyframes sad-slump {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(4deg) translateY(4px); }
+}
+@keyframes tick-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+/* springy squash-and-stretch jump with a rest beat, hero mascot row */
+@keyframes hero-bounce {
+  0%, 55%, 100% { transform: translateY(0) scale(1, 1); }
+  8% { transform: translateY(3px) scale(1.08, 0.9); }
+  30% { transform: translateY(-16px) scale(0.95, 1.06); }
+  48% { transform: translateY(1px) scale(1.05, 0.94); }
+}
+
+@keyframes float-mascot {
+  0%, 100% { transform: translateY(0) rotate(-4deg); opacity: 0.82; }
+  50% { transform: translateY(-20px) rotate(3deg); opacity: 0.96; }
+}
+
+@keyframes spin-bob {
+  0%   { transform: translateY(0)    rotate(0deg);   opacity: 0.82; }
+  25%  { transform: translateY(-12px) rotate(90deg);  opacity: 0.95; }
+  50%  { transform: translateY(-18px) rotate(180deg); opacity: 0.82; }
+  75%  { transform: translateY(-12px) rotate(270deg); opacity: 0.95; }
+  100% { transform: translateY(0)    rotate(360deg); opacity: 0.82; }
+}
+
+@keyframes shoot-across {
+  0%          { transform: translateX(-120px) translateY(0) rotate(-18deg); opacity: 0; }
+  6%, 94%     { opacity: 0.55; }
+  100%        { transform: translateX(110vw) translateY(-35px) rotate(-12deg); opacity: 0; }
+}
+
+.anim-shake { animation: shake-hard 450ms ease both; }
+.anim-wobble { animation: wobble-slow 2.4s ease-in-out infinite; }
+.anim-bob { animation: bob 2s ease-in-out infinite; }
+.anim-pop { animation: pop-in 300ms cubic-bezier(0.2, 1.8, 0.4, 1) both; }
+.anim-cheer { animation: squash-cheer 550ms ease both; }
+.anim-slump { animation: sad-slump 400ms ease both; }
+.anim-tick { animation: tick-pulse 1s ease-in-out infinite; }
+.anim-hero-bounce {
+  animation: hero-bounce 2.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-hero-bounce { animation: none !important; }
+  [style*="float-mascot"],
+  [style*="spin-bob"],
+  [style*="shoot-across"] { animation: none !important; opacity: 0.88 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage *,
+  .stage *::before,
+  .stage *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* background-music volume slider (main screen corner control) */
+.music-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 999px;
+  outline: none;
+}
+.music-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mustard);
+  border: 2px solid #221f30;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+.music-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mustard);
+  border: 2px solid #221f30;
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
