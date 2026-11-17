@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Mascot } from "@/components/cartoon/Mascot";
 import { Stamp } from "@/components/cartoon/Stamp";
 import { NumScale, RevealRow } from "@/components/screens/NumViews";
-import type { TutorialHostMode } from "@/lib/tutorials";
+import { Cast, Phone, cheer, pop, type SceneProps } from "./demo";
 
 const THEME = { theme: "Spicy foods", low: "basically milk", high: "call an ambulance" };
 const GUESSER = { avatarId: "detective", username: "Sam" };
@@ -21,10 +21,7 @@ const points = (diff: number) => (diff === 0 ? 200 : diff <= 1 ? 100 : diff <= 2
 // same formula as revealRound in src/lib/game/num.ts
 const GUESSER_BONUS = Math.round(100 * Math.max(0, 1 - CAST.reduce((s, c) => s + Math.abs(c.number - c.guess), 0) / CAST.length / 9));
 
-const pop = { type: "spring", stiffness: 420, damping: 26 } as const;
-const cheer = { type: "spring", stiffness: 600, damping: 18 } as const;
-
-export function NumTutorialScene({ scene, hostMode }: { scene: string; hostMode: TutorialHostMode }) {
+export function NumTutorialScene({ scene, hostMode }: SceneProps) {
   switch (scene) {
     case "welcome":
       return (
@@ -139,35 +136,6 @@ export function NumTutorialScene({ scene, hostMode }: { scene: string; hostMode:
     default:
       return null;
   }
-}
-
-function Cast({ members, crown }: { members: { avatarId: string; username: string }[]; crown?: number }) {
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      {members.map((m, i) => (
-        <motion.div key={m.username} initial={{ y: 30, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ ...pop, delay: i * 0.06 }} className="flex flex-col items-center gap-2">
-          <Mascot avatarId={m.avatarId} size={88} expression={crown === i ? "winner" : "idle"} animate={i === 0} />
-          <span className="nameplate font-display px-3 py-0.5 text-lg">{m.username}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-/** A phone controller, drawn: ink body, the owner's mascot on top. */
-function Phone({ owner, children }: { owner: { avatarId: string; username: string }; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <Mascot avatarId={owner.avatarId} size={56} animate={false} />
-      <div
-        className="flex h-60 w-40 flex-col items-center justify-center gap-2 rounded-[1.6rem] border-[5px] px-3"
-        style={{ borderColor: "var(--ink)", background: "var(--ink-soft)", boxShadow: "6px 6px 0 rgba(0,0,0,0.5)" }}
-      >
-        {children}
-      </div>
-      <span className="font-hand text-lg" style={{ color: "var(--cream)" }}>{owner.username}</span>
-    </div>
-  );
 }
 
 /** Examples drop onto the ruler at the guesser's numbers, one after another. */

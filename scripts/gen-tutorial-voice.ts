@@ -1,7 +1,8 @@
 // Pre-generates tutorial voice clips with ElevenLabs into public/tutorials.
 // Run: node --env-file=.env.local scripts/gen-tutorial-voice.ts [--force]
-// shortcut: clips are named by step index and skipped when present, so after
-// editing a line in src/lib/tutorials.ts rerun with --force (or delete that mp3).
+// shortcut: clips are named by step id and skipped when present, so after
+// editing a line in src/lib/tutorials.ts delete that mp3 (or rerun with --force,
+// which regenerates every clip). Optional filter: --game=<gameType>
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -15,11 +16,14 @@ if (!apiKey) {
 // same voice the Virtual Host uses with no personality picked (src/lib/ai/voice.ts)
 const voiceId = process.env.ELEVENLABS_VOICE_ID ?? "JBFqnCBsd6RMkjVDRZzb";
 const force = process.argv.includes("--force");
+const only = process.argv.find((a) => a.startsWith("--game="))?.slice(7);
 
+// every step, including ones a room's settings would filter out
 for (const [gameType, modes] of Object.entries(TUTORIALS)) {
+  if (only && gameType !== only) continue;
   for (const [mode, steps] of Object.entries(modes)) {
-    for (const [i, step] of steps.entries()) {
-      const out = join("public", tutorialClipUrl(gameType, mode as TutorialHostMode, i));
+    for (const step of steps) {
+      const out = join("public", tutorialClipUrl(gameType, mode as TutorialHostMode, step.id));
       if (!force && existsSync(out)) continue;
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
         method: "POST",

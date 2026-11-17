@@ -9,22 +9,41 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CaptionBar } from "@/components/game/CaptionBar";
 import { duckMusic } from "@/lib/sfx";
-import { tutorialClipUrl, type TutorialHostMode, type TutorialStep } from "@/lib/tutorials";
+import { tutorialClipUrl, type TutorialHostMode, type TutorialSettings, type TutorialStep } from "@/lib/tutorials";
+import type { SceneProps } from "./demo";
 import { NumTutorialScene } from "./NumTutorialScenes";
+import { TriviaTutorialScene } from "./TriviaTutorialScenes";
+import { TtalTutorialScene } from "./TtalTutorialScenes";
+import { WyrTutorialScene } from "./WyrTutorialScenes";
+import { MltTutorialScene } from "./MltTutorialScenes";
+import { HolTutorialScene } from "./HolTutorialScenes";
+import { GtpTutorialScene } from "./GtpTutorialScenes";
+import { TankTutorialScene } from "./TankTutorialScenes";
+import { CharadesTutorialScene } from "./CharadesTutorialScenes";
 
-const SCENES: Record<string, React.ComponentType<{ scene: string; hostMode: TutorialHostMode }>> = {
+const SCENES: Record<string, React.ComponentType<SceneProps>> = {
   num: NumTutorialScene,
+  buzz_trivia: TriviaTutorialScene,
+  ttal: TtalTutorialScene,
+  wyr: WyrTutorialScene,
+  mlt: MltTutorialScene,
+  hol: HolTutorialScene,
+  gtp: GtpTutorialScene,
+  tank: TankTutorialScene,
+  charades: CharadesTutorialScene,
 };
 
 export function TutorialPlayer({
   gameType,
   hostMode,
   steps,
+  settings = {},
   onDone,
 }: {
   gameType: string;
   hostMode: TutorialHostMode;
   steps: TutorialStep[];
+  settings?: TutorialSettings;
   onDone: () => void;
 }) {
   const [i, setI] = useState(0);
@@ -49,7 +68,7 @@ export function TutorialPlayer({
     }
     let settled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const audio = new Audio(tutorialClipUrl(gameType, hostMode, i));
+    const audio = new Audio(tutorialClipUrl(gameType, hostMode, step.id));
     const next = () => {
       if (settled) return;
       settled = true;
@@ -105,14 +124,14 @@ export function TutorialPlayer({
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={step.scene}
+          key={step.id}
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ type: "spring", stiffness: 420, damping: 26 }}
           className="flex min-h-[22rem] w-full flex-col items-center justify-center"
         >
-          {Scene && <Scene scene={step.scene} hostMode={hostMode} />}
+          {Scene && <Scene scene={step.scene} hostMode={hostMode} settings={settings} />}
         </motion.div>
       </AnimatePresence>
 

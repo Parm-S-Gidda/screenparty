@@ -41,6 +41,27 @@ paid-only. Webhooks are testable offline: `node scripts/stripe-webhook-sign.mjs
 <user_id> <status> <verb>` emits a signed payload for `/api/billing/webhook` (secret
 `whsec_local_test_secret` from `.env.local`).
 
+## How-to-play tutorials: keep them in sync (required)
+Every game has a voiced tutorial that plays on the big screen before round 1
+(playbook: `docs/TUTORIALS.md`). Scripts in `src/lib/tutorials.ts` restate the
+real rules out loud (points, timers, who taps what, team/retry/variation
+behaviour); scenes in `src/components/tutorial/<Game>TutorialScenes.tsx` feed
+fake room state into the game's real screens.
+
+**Whenever you change a game's engine (`src/lib/game/*.ts`), its scoring
+constants (`src/lib/constants.ts`), its settings, or its screens
+(`src/components/screens/*`), update that game's tutorial in the same change:**
+1. Re-read the game's script and fix any line the change made untrue; add or
+   adjust a `when`-gated step for a new setting.
+2. Fix the scene's fake payloads if a `PublicPayload`/`RoomStateResponse` shape
+   changed (`npx tsc` catches most of these), and recompute demo scores from
+   the constants.
+3. Delete the mp3s of edited lines and regenerate:
+   `node --env-file=.env.local scripts/gen-tutorial-voice.ts --game=<gameType>`.
+4. Play it at `/dev/tutorial?game=<gameType>&mode=virtual|self` (plus
+   `&teams=1`, `&retries=0`, `&autoskip=1`, `&variation=two_lies` as relevant).
+A new game isn't done until it has both scripts, scenes and clips.
+
 ## Stack
 Next.js App Router + TypeScript + Tailwind v4 + shadcn/ui + Framer Motion + Supabase
 (Auth, Postgres, Realtime). Local Supabase runs via the `supabase` npm dev dependency

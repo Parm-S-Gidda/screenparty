@@ -155,7 +155,7 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
 
   const { session } = state;
   const payload = session.payload;
-  const tutorial = session.settings.tutorial !== false ? getTutorial(session.gameType, session.hostMode) : null;
+  const tutorial = session.settings.tutorial !== false ? getTutorial(session.gameType, session.hostMode, session.settings) : null;
   const showTutorial = inTutorial && session.state === "LOBBY" && tutorial;
   const start = () => (tutorial ? setInTutorial(true) : act({ type: "START_GAME" }));
   // remount + shake the stage when a new buzz lands
@@ -251,6 +251,7 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
                   gameType={session.gameType}
                   hostMode={session.hostMode}
                   steps={tutorial}
+                  settings={session.settings}
                   onDone={() => {
                     setInTutorial(false);
                     void act({ type: "START_GAME" });
@@ -308,7 +309,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StateView({
+export function StateView({
   state,
   isOwner,
   act,

@@ -13,18 +13,22 @@ export function HostController({
   code,
   state,
   playerToken,
+  demoPreview,
 }: {
   code: string;
   state: RoomStateResponse;
   playerToken?: string;
+  /** tutorial demo: show this instead of fetching the real preview */
+  demoPreview?: { index: number; text: string; answer: string };
 }) {
   const session = state.session!;
-  const [preview, setPreview] = useState<{ index: number; text: string; answer: string } | null>(null);
+  const [preview, setPreview] = useState<{ index: number; text: string; answer: string } | null>(demoPreview ?? null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    if (demoPreview) return;
     if (session.state === "QUESTION_PREVIEW" || session.state === "BUZZ_OPEN" || session.state === "PLAYER_BUZZED") {
       fetchPreview(code, playerToken)
         .then((p) => {
@@ -37,7 +41,7 @@ export function HostController({
     return () => {
       cancelled = true;
     };
-  }, [code, playerToken, session.state, session.questionIndex]);
+  }, [code, playerToken, session.state, session.questionIndex, demoPreview]);
 
   async function act(action: GameAction) {
     setBusy(true);

@@ -222,7 +222,7 @@ function PlayerHeader({ state, player }: { state: RoomStateResponse; player: Pla
   );
 }
 
-function PlayerGameView({
+export function PlayerGameView({
   code,
   state,
   player,
