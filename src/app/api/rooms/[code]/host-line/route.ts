@@ -8,8 +8,9 @@ import {
   HOST_MOMENTS,
   type HostLineContext,
   type HostMoment,
+  type HostPersonality,
 } from "@/lib/ai/hostLines";
-import { getVoiceClip } from "@/lib/ai/voice";
+import { getVoiceClip, personalityVoiceId } from "@/lib/ai/voice";
 import { getUsage, trackUsage } from "@/lib/ai/usage";
 import { LIMITS, tierFromString } from "@/lib/constants";
 import { rateLimit } from "@/lib/rateLimit";
@@ -37,7 +38,7 @@ export async function POST(
     if (session.host_mode !== "virtual")
       throw new GameError(409, "This room is not AI-hosted");
 
-    if (!rateLimit(`host-line:${session.id}`, 20, 10_000)) throw new GameError(429, "Slow down");
+    if (!await rateLimit(`host-line:${session.id}`, 20, 10_000)) throw new GameError(429, "Slow down");
 
     const { moment, statementId } = (await request.json()) as {
       moment: HostMoment;
@@ -45,8 +46,9 @@ export async function POST(
     };
     if (!HOST_MOMENTS.includes(moment)) throw new GameError(400, "Unknown moment");
 
+    const personality = (session.settings?.hostPersonality ?? "neutral") as HostPersonality;
     const context = await buildContext(admin, room.id, session, moment, statementId);
-    const line = await generateHostLine(moment, context);
+    const line = await generateHostLine(moment, context, personality);
     if (line.source === "llm") {
       await trackUsage(admin, user.id, "llm_host_lines", 1);
     }
@@ -57,7 +59,7 @@ export async function POST(
     const charsUsed = await getUsage(admin, user.id, "elevenlabs_chars");
     const underVoiceCap = charsUsed + line.text.length <= LIMITS[tier].elevenLabsCharsPerMonth;
 
-    const voice = underVoiceCap ? await getVoiceClip(admin, line.text) : null;
+    const voice = underVoiceCap ? await getVoiceClip(admin, line.text, personalityVoiceId(personality)) : null;
     if (voice && voice.characters > 0) {
       await trackUsage(admin, user.id, "elevenlabs_chars", voice.characters);
     }
@@ -86,22 +88,22 @@ type SessionRow = {
   current_state: string;
   current_question_index: number;
   question_count: number;
-  settings?: { variation?: string };
+  settings?: { variation?: string; hostPersonality?: string };
   public_payload: {
     question?: { text: string };
     buzz?: { playerId: string };
-    lastResult?: { playerId: string; points: number; answerText?: string };
+    lastResult?: { playerId: string; correct: boolean; points: number; answerText?: string };
     answer?: { text: string };
     podium?: { place: number; playerIds: string[] }[];
     ttalRound?: { subjectId: string; statements: { id: string; text: string }[] };
     ttalReveal?: { oddStatementId: string; correctVoterIds: string[]; fooledVoterIds: string[] };
     wyrRound?: { optionA: string; optionB: string };
-    wyrReveal?: { majority: "a" | "b" | "tie"; correctPredictorIds: string[] };
+    wyrReveal?: { majority: "a" | "b" | "tie"; countA: number; countB: number; correctPredictorIds: string[]; timedOut?: boolean };
     // most likely to
-    mltRound?: { prompt: string; round: number };
-    mltReveal?: { topPlayerIds: string[]; votesByPlayerId: Record<string, number>; voterPoints: number; winnerVoterIds: string[] };
+    mltRound?: { promptText: string; openedAt: string };
+    mltReveal?: { topPlayerIds: string[]; votes: { voterId: string; targetId: string }[]; voterPoints: number; winnerVoterIds: string[] };
     // higher or lower
-    holRound?: { leftLabel: string; leftUnit: string; leftValue: number | null; rightLabel: string; rightUnit: string };
+    holRound?: { leftLabel: string; leftUnit: string; leftCategory: string; leftValue: number | null; rightLabel: string; rightUnit: string; rightCategory: string };
     holReveal?: { leftValue: number; rightValue: number; correctAnswer: "higher" | "lower"; majority: string; correctVoterIds: string[]; voterPoints: number };
     // guess the player
     gtpRound?: { promptText: string; mode: string; answerIndex: number; totalAnswers: number };
@@ -187,21 +189,77 @@ async function buildContext(
         context.revealedAnswer = payload.answer?.text;
       }
       break;
-    case "scoreboard_reveal": {
+    case "scoreboard_reveal":
+    case "rank_rose":
+    case "rank_fell":
+    case "runaway_lead": {
+      const { data: allScores } = await admin
+        .from("scores")
+        .select("player_id, score")
+        .eq("session_id", session.id)
+        .order("score", { ascending: false });
+      if (allScores && allScores.length > 0) {
+        if (allScores.length > 1 && allScores[1].score === allScores[0].score) {
+          context.isTie = true;
+        } else if (allScores[0].score > 0) {
+          context.leaderName = nameOf(allScores[0].player_id);
+        }
+        if (allScores.length >= 2) {
+          context.secondPlaceName = nameOf(allScores[1].player_id);
+          const gap = allScores[0].score - allScores[1].score;
+          context.leaderGap = gap;
+          const remaining = session.question_count - session.current_question_index - 1;
+          context.isUnstoppableLead = gap > remaining * 100;
+        }
+        // Rank change: reconstruct pre-answer standings using lastResult delta
+        const lr = payload.lastResult;
+        if (lr && allScores.length >= 2) {
+          const delta = lr.correct ? lr.points : -lr.points;
+          const prevScores = allScores
+            .map((s) => ({ ...s, score: s.player_id === lr.playerId ? s.score - delta : s.score }))
+            .sort((a, b) => b.score - a.score);
+          const curRank = allScores.findIndex((s) => s.player_id === lr.playerId) + 1;
+          const prevRank = prevScores.findIndex((s) => s.player_id === lr.playerId) + 1;
+          context.playerName = nameOf(lr.playerId);
+          context.previousRank = prevRank;
+          context.newRank = curRank;
+          context.rankChange = curRank < prevRank ? "rose" : curRank > prevRank ? "fell" : "same";
+        }
+      }
+      break;
+    }
+    case "final_question": {
       const { data: top } = await admin
         .from("scores")
         .select("player_id, score")
         .eq("session_id", session.id)
         .order("score", { ascending: false })
         .limit(2);
-      if (top && top.length > 0 && top[0].score > 0) {
-        // a tied top score has no single leader, never crown one at random
+      if (top && top.length > 0) {
         if (top.length > 1 && top[1].score === top[0].score) {
           context.isTie = true;
-        } else {
+        } else if (top[0].score > 0) {
           context.leaderName = nameOf(top[0].player_id);
         }
+        if (top.length >= 2) {
+          const gap = top[0].score - top[1].score;
+          context.leaderGap = gap;
+          // final_question fires at QUESTION_PREVIEW for the last question;
+          // remaining = 1 (this question), so gap > 100 means uncatchable
+          context.isUnstoppableLead = gap > 100;
+        }
       }
+      break;
+    }
+    case "answer_lore": {
+      if (session.current_state === "SHOW_ANSWER" || session.current_state === "GAME_OVER") {
+        context.revealedAnswer = payload.answer?.text;
+        context.questionText = payload.question?.text;
+      }
+      break;
+    }
+    case "buzz_interrupted": {
+      context.playerName = nameOf(payload.buzz?.playerId);
       break;
     }
     case "game_over_winner":
@@ -217,11 +275,13 @@ async function buildContext(
       context.optionA = payload.wyrRound?.optionA;
       context.optionB = payload.wyrRound?.optionB;
       if (moment === "wyr_reveal" && session.current_state === "REVEAL" && payload.wyrReveal) {
-        const { majority, correctPredictorIds } = payload.wyrReveal;
+        const { majority, countA, countB, correctPredictorIds, timedOut } = payload.wyrReveal;
         context.isTie = majority === "tie";
         context.majorityOption =
           majority === "a" ? payload.wyrRound?.optionA : majority === "b" ? payload.wyrRound?.optionB : undefined;
+        context.wyrMajorityVotes = majority === "a" ? countA : majority === "b" ? countB : 0;
         context.caughtCount = correctPredictorIds.length;
+        context.wyrTimedOut = timedOut ?? false;
       }
       break;
     }
@@ -252,15 +312,15 @@ async function buildContext(
     }
     // Most Likely To
     case "mlt_round_intro":
-      context.mltPrompt = payload.mltRound?.prompt;
+      context.mltPrompt = payload.mltRound?.promptText;
       break;
     case "mlt_reveal":
       if (payload.mltReveal) {
-        const { topPlayerIds, votesByPlayerId } = payload.mltReveal;
-        context.mltPrompt = payload.mltRound?.prompt;
+        const { topPlayerIds, votes } = payload.mltReveal;
+        context.mltPrompt = payload.mltRound?.promptText;
         if (topPlayerIds.length === 1) {
           context.mltTopPlayerName = nameOf(topPlayerIds[0]);
-          context.mltVoteCount = votesByPlayerId[topPlayerIds[0]] ?? 0;
+          context.mltVoteCount = votes.filter((v) => v.targetId === topPlayerIds[0]).length;
         }
       }
       break;
@@ -270,9 +330,11 @@ async function buildContext(
         const r = payload.holRound;
         context.holLeftLabel = r.leftLabel;
         context.holLeftUnit = r.leftUnit;
+        context.holLeftCategory = r.leftCategory;
         context.holLeftValue = r.leftValue;
         context.holRightLabel = r.rightLabel;
         context.holRightUnit = r.rightUnit;
+        context.holRightCategory = r.rightCategory;
       }
       break;
     case "hol_reveal":
@@ -280,8 +342,10 @@ async function buildContext(
         const r = payload.holReveal;
         context.holLeftLabel = payload.holRound?.leftLabel;
         context.holLeftUnit = payload.holRound?.leftUnit;
+        context.holLeftCategory = payload.holRound?.leftCategory;
         context.holRightLabel = payload.holRound?.rightLabel;
         context.holRightUnit = payload.holRound?.rightUnit;
+        context.holRightCategory = payload.holRound?.rightCategory;
         context.holRightValue = r.rightValue;
         context.holCorrectAnswer = r.correctAnswer;
         context.holCorrectVoterCount = r.correctVoterIds.length;

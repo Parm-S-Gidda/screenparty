@@ -22,7 +22,10 @@ export function Podium({
   }, []);
 
   const playerById = new Map(players.map((p) => [p.id, p]));
-  const slots = [2, 1, 3].map((place) => podium.find((e) => e.place === place) ?? null);
+  // Use ordinal rank order so a 1st-place tie (place: 1 → 3) still fills
+  // the 2nd slot rather than leaving it empty.
+  const sorted = [...podium].sort((a, b) => a.place - b.place).slice(0, 3);
+  const slots = [sorted[1] ?? null, sorted[0] ?? null, sorted[2] ?? null];
   const heights = { 1: 168, 2: 118, 3: 88 } as const;
   const boxColors = { 1: "#f0b429", 2: "#2fa8a0", 3: "#ee7c8e" } as const;
 

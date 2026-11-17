@@ -29,15 +29,16 @@ import { RoughButton } from "@/components/cartoon/RoughButton";
 import { DoodleStar, ScribbleUnderline, SpotRays, StarField } from "@/components/cartoon/Doodles";
 import type { RoomStateResponse } from "@/lib/game/types";
 
-export function PlayerScreen({ code }: { code: string }) {
+export function PlayerScreen({ code, initialSession }: { code: string; initialSession?: PlayerSession }) {
   const router = useRouter();
-  const [player, setPlayer] = useState<PlayerSession | null | undefined>(undefined);
+  const [player, setPlayer] = useState<PlayerSession | null | undefined>(initialSession ?? undefined);
 
   useEffect(() => {
+    if (initialSession) return;
     const session = loadPlayerSession(code);
     setPlayer(session);
     if (!session) router.replace(`/join?code=${encodeURIComponent(code)}`);
-  }, [code, router]);
+  }, [code, router, initialSession]);
 
   if (player === undefined) return <PhoneShell>Loading…</PhoneShell>;
   if (player === null) return <PhoneShell>Sending you to the join page…</PhoneShell>;
@@ -328,7 +329,7 @@ function PlayerGameView({
             >
               You&apos;re up!
             </motion.p>
-            <p className="font-hand text-2xl opacity-80">Say it loud! 🎤</p>
+            <p className="font-hand text-2xl opacity-80">Say it loud!</p>
           </div>
         );
       }

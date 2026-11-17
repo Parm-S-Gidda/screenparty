@@ -298,7 +298,7 @@ export function GtpRevealPanel({ state }: { state: RoomStateResponse }) {
       <Stamp color="green" size="lg">{author?.username ?? "?"}</Stamp>
       {iAmAuthor ? (
         <p className="font-display text-3xl" style={{ color: "var(--mustard)" }}>
-          {fooledCount > 0 ? `+${fooledCount * 50} pts for fooling ${fooledCount}!` : "Nobody fooled 😅"}
+          {fooledCount > 0 ? `+${fooledCount * reveal.writerPoints} pts for fooling ${fooledCount}!` : "Nobody fooled"}
         </p>
       ) : iCorrect ? (
         <Stamp color="green" size="lg">+{reveal.guesserPoints} pts!</Stamp>

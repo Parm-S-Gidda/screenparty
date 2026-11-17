@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type UsageMetric = "elevenlabs_chars" | "llm_host_lines" | "llm_judgments" | "ai_host_games";
+export type UsageMetric = "elevenlabs_chars" | "llm_host_lines" | "llm_judgments" | "ai_host_games" | "ai_pack_gen";
 
 function currentPeriodStart(): string {
   const now = new Date();

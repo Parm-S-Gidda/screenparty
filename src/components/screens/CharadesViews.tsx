@@ -172,7 +172,7 @@ export function CharadesActPhone({ state }: { state: RoomStateResponse }) {
       <p className="font-display text-4xl tabular-nums" style={{ color: remaining < 10 ? "var(--coral)" : "var(--mustard)" }}>
         {remaining}s
       </p>
-      <p className="font-hand text-xl opacity-80">Act it out, no talking! 🎭</p>
+      <p className="font-hand text-xl opacity-80">Act it out, no talking!</p>
     </div>
   );
 }
@@ -199,7 +199,7 @@ export function CharadesGuessPhone({
       <div className="flex flex-col items-center gap-4 text-center">
         {actor && <Mascot avatarId={actor.avatarId} size={72} expression="buzzed" />}
         <p className="font-display text-3xl uppercase">Act it out!</p>
-        <p className="font-hand text-xl opacity-70">No speaking, let them guess! 🎭</p>
+        <p className="font-hand text-xl opacity-70">No speaking, let them guess!</p>
       </div>
     );
   }
@@ -260,7 +260,7 @@ export function CharadesRevealPhone({ state }: { state: RoomStateResponse }) {
       <Stamp color="green" size="lg">{reveal.word}</Stamp>
       {iWinner && (
         <p className="font-display text-4xl" style={{ color: "var(--mustard)" }}>
-          You got it! +{reveal.guesserPoints} pts! 🎉
+          You got it! +{reveal.guesserPoints} pts!
         </p>
       )}
       {iActor && reveal.winnerId && (
@@ -269,7 +269,7 @@ export function CharadesRevealPhone({ state }: { state: RoomStateResponse }) {
         </p>
       )}
       {iActor && !reveal.winnerId && (
-        <p className="font-hand text-xl opacity-70">Nobody guessed in time 😅</p>
+        <p className="font-hand text-xl opacity-70">Nobody guessed in time</p>
       )}
       {!iWinner && !iActor && (
         <p className="font-hand text-xl opacity-70">

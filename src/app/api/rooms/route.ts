@@ -11,11 +11,15 @@ import {
   AUTO_SKIP_OPTIONS,
   TTAL_ROUND_OPTIONS,
   TTAL_DEFAULT_ROUNDS,
+  TTAL_COLLECT_SECOND_OPTIONS,
+  TTAL_DEFAULT_COLLECT_SECONDS,
   resolveTier,
 } from "@/lib/constants";
 import { rateLimit } from "@/lib/rateLimit";
 import { getUsage } from "@/lib/ai/usage";
 import type { GameSettings } from "@/lib/game/types";
+import { GAMES } from "@/lib/games";
+import { clampMaxPlayers } from "@/lib/playerRange";
 
 // POST /api/rooms, create a room + lobby game session (authenticated hosts only)
 export async function POST(request: NextRequest) {
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new GameError(401, "Sign in to host a game");
-    if (!rateLimit(`create-room:${user.id}`, 10, 60_000))
+    if (!await rateLimit(`create-room:${user.id}`, 10, 60_000))
       throw new GameError(429, "Too many rooms created, slow down");
 
     const body = await request.json();
@@ -49,14 +53,25 @@ export async function POST(request: NextRequest) {
     let questionCount = 0;
     if (gameType === "buzz_trivia") {
       packId = String(body.packId ?? "");
-      const { data: pack } = await admin
-        .from("question_packs")
-        .select("id, is_premium")
-        .eq("id", packId)
-        .maybeSingle();
-      if (!pack) throw new GameError(400, "Pick a question pack");
-      if (pack.is_premium && tier === "free")
-        throw new GameError(403, "That pack requires a paid plan");
+      const packSource: "builtin" | "custom" = body.packSource === "custom" ? "custom" : "builtin";
+      if (packSource === "custom") {
+        const { data: customPack } = await admin
+          .from("custom_packs")
+          .select("id, host_user_id")
+          .eq("id", packId)
+          .maybeSingle();
+        if (!customPack) throw new GameError(400, "Custom pack not found");
+        if (customPack.host_user_id !== user.id) throw new GameError(403, "Not your pack");
+      } else {
+        const { data: pack } = await admin
+          .from("question_packs")
+          .select("id, is_premium")
+          .eq("id", packId)
+          .maybeSingle();
+        if (!pack) throw new GameError(400, "Pick a question pack");
+        if (pack.is_premium && tier === "free")
+          throw new GameError(403, "That pack requires a paid plan");
+      }
 
       questionCount = Number(body.questionCount);
       if (!QUESTION_COUNT_OPTIONS.includes(questionCount as 5))
@@ -104,6 +119,7 @@ export async function POST(request: NextRequest) {
 
     const settings: GameSettings = {
       packId,
+      packSource: body.packSource === "custom" ? "custom" : "builtin",
       questionCount,
       difficulty,
       hostMode,
@@ -114,7 +130,12 @@ export async function POST(request: NextRequest) {
       retriesEnabled: body.retriesEnabled !== false,
       maxRetries: Math.min(Math.max(Number(body.maxRetries) || 3, 1), LIMITS.maxRetriesCap),
       strictness: "normal",
-      maxPlayers: tierLimits.maxPlayers,
+      // host-chosen cap, never above the plan (join enforces it per room)
+      maxPlayers: clampMaxPlayers(
+        body.maxPlayers,
+        GAMES.find((g) => g.gameType === gameType)?.minPlayers ?? 1,
+        tierLimits.maxPlayers,
+      ),
       variation:
         gameType === "ttal" ? (body.variation === "two_lies" ? "two_lies" : "two_truths") : undefined,
       rounds:
@@ -123,7 +144,19 @@ export async function POST(request: NextRequest) {
             ? Number(body.rounds)
             : TTAL_DEFAULT_ROUNDS
           : undefined,
+      collectingSeconds:
+        gameType === "ttal"
+          ? TTAL_COLLECT_SECOND_OPTIONS.includes(Number(body.collectingSeconds) as 90)
+            ? Number(body.collectingSeconds)
+            : TTAL_DEFAULT_COLLECT_SECONDS
+          : undefined,
       teamsEnabled: gameType !== "ttal" && Boolean(body.teamsEnabled),
+      tutorial: body.tutorial !== false,
+      hostPersonality:
+        hostMode === "virtual" &&
+        ["pro", "neutral", "comedian", "unhinged"].includes(body.hostPersonality)
+          ? body.hostPersonality
+          : undefined,
     };
     if (settings.teamsEnabled && tier === "free" && !TEAMS_FREE_BETA)
       throw new GameError(403, "Team mode requires a paid plan");

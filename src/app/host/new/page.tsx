@@ -10,7 +10,7 @@ import { ConfigForm } from "@/components/ConfigForm";
 import { TtalConfigForm } from "@/components/TtalConfigForm";
 import { WyrConfigForm } from "@/components/WyrConfigForm";
 import { SimpleGameConfigForm } from "@/components/SimpleGameConfigForm";
-import { resolveTier } from "@/lib/constants";
+import { LIMITS, resolveTier } from "@/lib/constants";
 
 const SIMPLE_GAMES = ["mlt", "hol", "gtp", "tank", "charades", "num"] as const;
 
@@ -53,6 +53,8 @@ export default async function NewGamePage({
     .eq("id", user.id)
     .single();
 
+  const tier = resolveTier(profile);
+
   return (
     <ConfigForm
       packs={(packs ?? []).map((p) => ({
@@ -63,7 +65,8 @@ export default async function NewGamePage({
         isPremium: p.is_premium,
         questionCount: countByPack.get(p.id) ?? 0,
       }))}
-      planTier={resolveTier(profile)}
+      planTier={tier}
+      canAiGenerate={LIMITS[tier].aiPackGenPerMonth > 0}
     />
   );
 }

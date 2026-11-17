@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BRAND_NAME, LIMITS } from "@/lib/constants";
 import { AVAILABLE_GAMES } from "@/lib/games";
-import { Breadcrumbs } from "@/components/public/Breadcrumbs";
 import { PublicFAQ } from "@/components/public/PublicFAQ";
-import { TapedLabel } from "@/components/cartoon/Panel";
-import { SpotRays } from "@/components/cartoon/Doodles";
+import { PageHeader, TextLink } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `Help & FAQ | ${BRAND_NAME}`,
@@ -15,8 +12,6 @@ export const metadata: Metadata = {
     description: "Common questions about ScreenParty answered.",
   },
 };
-
-const INK = "#221f30";
 
 const JOINING_FAQS = [
   {
@@ -121,112 +116,67 @@ const TECH_FAQS = [
   },
 ];
 
+const SECTIONS = [
+  { id: "joining", title: "Joining a game", items: JOINING_FAQS },
+  { id: "hosting", title: "Hosting", items: HOSTING_FAQS },
+  { id: "virtual-host", title: "Virtual Host", items: VIRTUAL_HOST_FAQS, more: { href: "/virtual-host", label: "The Virtual Host page" } },
+  { id: "games", title: "Games", items: GAMES_FAQS, more: { href: "/games", label: "Browse all games" } },
+  { id: "technical", title: "Technical", items: TECH_FAQS },
+];
+
 export default function HelpPage() {
   return (
-    <div className="relative overflow-hidden">
-      <SpotRays className="absolute left-0 top-0 h-96 w-[50vw] opacity-40" />
+    <div className="relative">
+      <PageHeader
+        crumbs={[
+          { label: BRAND_NAME, href: "/" },
+          { label: "Help", href: "/help" },
+        ]}
+        title="How can we help?"
+        sub="Answers about joining, hosting, the games and the Virtual Host."
+      />
 
-      <div className="relative z-10 mx-auto w-full max-w-3xl px-6 pt-12">
-        <Breadcrumbs
-          items={[
-            { label: BRAND_NAME, href: "/" },
-            { label: "Help", href: "/help" },
-          ]}
-        />
-
-        <TapedLabel tilt={-1} color="var(--paper)">
-          <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-            help & faq
-          </span>
-        </TapedLabel>
-        <h1
-          className="font-display mt-3 text-4xl uppercase tracking-wide md:text-5xl"
-          style={{ color: "var(--cream)" }}
-        >
-          Common Questions
-        </h1>
-        <p className="font-hand mt-4 text-xl leading-snug" style={{ color: "var(--muted-foreground)" }}>
-          Everything you need to know about joining, hosting, games, and the Virtual Host.
-        </p>
-
-        <nav aria-label="Help sections" className="mt-8 flex flex-wrap gap-2">
-          {[
-            { label: "Joining", href: "#joining" },
-            { label: "Hosting", href: "#hosting" },
-            { label: "Virtual Host", href: "#virtual-host" },
-            { label: "Games", href: "#games" },
-            { label: "Technical", href: "#technical" },
-          ].map(({ label, href }) => (
-            <a
-              key={href}
-              href={href}
-              className="font-score rounded-full border-2 border-current px-3 py-1 text-[10px] uppercase tracking-[0.2em] opacity-70 transition hover:opacity-100"
-              style={{ color: "var(--cream)" }}
-            >
-              {label}
-            </a>
-          ))}
+      <div className="mx-auto grid w-full max-w-5xl gap-10 px-6 pb-24 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-14">
+        <nav aria-label="Help sections" className="md:sticky md:top-6 md:h-fit">
+          <ul className="flex flex-wrap gap-2 md:flex-col md:gap-0">
+            {SECTIONS.map(({ id, title }) => (
+              <li key={id}>
+                <a
+                  href={`#${id}`}
+                  className="font-score flex min-h-11 items-center rounded-lg border-2 px-3 text-sm uppercase tracking-[0.12em] transition-colors hover:text-[var(--mustard)] md:border-0 md:px-0"
+                  style={{ color: "var(--cream)", borderColor: "rgba(245,236,212,0.3)" }}
+                >
+                  {title}
+                </a>
+              </li>
+            ))}
+          </ul>
         </nav>
 
-        <section id="joining" className="mt-12">
-          <h2 className="font-display mb-5 text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Joining a Game
-          </h2>
-          <PublicFAQ items={JOINING_FAQS} />
-        </section>
+        <div className="flex flex-col gap-16">
+          {SECTIONS.map(({ id, title, items, more }) => (
+            <section key={id} id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-6">
+              <h2 id={`${id}-heading`} className="font-display mb-6 text-3xl uppercase" style={{ color: "var(--cream)" }}>
+                {title}
+              </h2>
+              <PublicFAQ items={items} />
+              {more && (
+                <div className="mt-3">
+                  <TextLink href={more.href}>{more.label} →</TextLink>
+                </div>
+              )}
+            </section>
+          ))}
 
-        <section id="hosting" className="mt-12">
-          <h2 className="font-display mb-5 text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Hosting
-          </h2>
-          <PublicFAQ items={HOSTING_FAQS} />
-        </section>
-
-        <section id="virtual-host" className="mt-12">
-          <h2 className="font-display mb-5 text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Virtual Host
-          </h2>
-          <PublicFAQ items={VIRTUAL_HOST_FAQS} />
-          <div className="mt-4">
-            <Link
-              href="/virtual-host"
-              className="font-score text-[10px] uppercase tracking-[0.25em] underline"
-              style={{ color: "var(--cream)" }}
-            >
-              Full Virtual Host page →
-            </Link>
-          </div>
-        </section>
-
-        <section id="games" className="mt-12">
-          <h2 className="font-display mb-5 text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Games
-          </h2>
-          <PublicFAQ items={GAMES_FAQS} />
-          <div className="mt-4">
-            <Link
-              href="/games"
-              className="font-score text-[10px] uppercase tracking-[0.25em] underline"
-              style={{ color: "var(--cream)" }}
-            >
-              Browse all games →
-            </Link>
-          </div>
-        </section>
-
-        <section id="technical" className="mt-12">
-          <h2 className="font-display mb-5 text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Technical
-          </h2>
-          <PublicFAQ items={TECH_FAQS} />
-        </section>
-
-        <div className="mb-20 mt-12 border-t pt-8" style={{ borderColor: "rgba(245,236,212,0.15)" }}>
-          <p className="font-hand text-xl" style={{ color: "var(--muted-foreground)" }}>
-            Still have a question?{" "}
+          <section aria-labelledby="contact-heading" className="panel-paper panel-grain p-6">
+            <h2 id="contact-heading" className="font-display text-xl" style={{ color: "var(--ink)" }}>
+              Still stuck?
+            </h2>
             {/* Owner decision needed: replace with actual support channel (email, Discord, etc.) */}
-            <span style={{ color: "var(--cream)" }}>Contact us through your account dashboard.</span>
-          </p>
+            <p className="font-hand mt-2 text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+              Contact us through your account dashboard.
+            </p>
+          </section>
         </div>
       </div>
     </div>

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND_NAME } from "@/lib/constants";
-import { AVAILABLE_GAMES } from "@/lib/games";
+import { BRAND_NAME, LIMITS } from "@/lib/constants";
+import { AVAILABLE_GAMES, getGameBySlug } from "@/lib/games";
 import { PublicGameCard } from "@/components/public/PublicGameCard";
-import { TapedLabel } from "@/components/cartoon/Panel";
-import { SpotRays } from "@/components/cartoon/Doodles";
+import { GamePreview } from "@/components/public/GamePreview";
+import { RevealItem, RevealList } from "@/components/public/Reveal";
+import { ClosingCta, PageHeader, SectionHeading } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `Online Party Games for Groups | ${BRAND_NAME}`,
@@ -17,20 +18,18 @@ export const metadata: Metadata = {
   },
 };
 
-const INK = "#221f30";
-
-const CATEGORIES = [
-  "All",
-  "Trivia",
-  "Bluffing",
-  "Voting",
-  "Social Guessing",
-  "Creative",
-  "Acting",
-  "Ranking",
+// Starter picks: the advice that used to sit in the bottom CTA, now pointing at the games.
+const STARTERS = [
+  { slug: "two-truths-and-a-lie", why: "Best opener when the group doesn't know each other well." },
+  { slug: "fact-frenzy", why: "Works for any crowd size, even a solo warm-up." },
+  { slug: "most-likely-to", why: "The one that gets the biggest reactions." },
 ];
 
 export default function GamesPage() {
+  const starters = STARTERS.flatMap(({ slug, why }) => {
+    const game = getGameBySlug(slug);
+    return game ? [{ game, why }] : [];
+  });
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -47,89 +46,73 @@ export default function GamesPage() {
   };
 
   return (
-    <div className="relative overflow-hidden">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    <div className="relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <PageHeader
+        crumbs={[
+          { label: BRAND_NAME, href: "/" },
+          { label: "Games", href: "/games" },
+        ]}
+        title={
+          <>
+            {AVAILABLE_GAMES.length} games, <span style={{ color: "var(--mustard)" }}>one room code</span>
+          </>
+        }
+        sub={`Trivia, bluffing, acting, voting, pitching and more. Put one on the big screen and everyone plays from their phone. All of them are free for up to ${LIMITS.free.maxPlayers} players.`}
       />
-      <SpotRays className="absolute left-0 top-0 h-96 w-[50vw] opacity-60" />
-      <SpotRays flip className="absolute right-0 top-0 h-96 w-[50vw] opacity-60" />
 
-      {/* Header */}
-      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-10 pt-16">
-        <div className="flex flex-col items-start gap-3">
-          <TapedLabel tilt={-1} color="var(--paper)">
-            <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-              {AVAILABLE_GAMES.length} games available
-            </span>
-          </TapedLabel>
-          <h1
-            className="font-display text-4xl uppercase tracking-wide md:text-5xl"
-            style={{ color: "var(--cream)" }}
-          >
-            Online Party Games for Every Kind of Group
-          </h1>
-          <p className="font-hand max-w-xl text-xl leading-snug" style={{ color: "var(--muted-foreground)" }}>
-            Put the game on the big screen. Everyone joins from their phone. No app, no console, no player accounts.
-          </p>
-        </div>
-      </section>
-
-      {/* Category labels, informational only (no JS filter at this game count) */}
-      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-6">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <span
-              key={cat}
-              className="font-score rounded-full border-2 border-current px-3 py-1 text-[10px] uppercase tracking-[0.2em] opacity-60"
-              style={{ color: "var(--cream)" }}
-            >
-              {cat}
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* Game grid */}
-      <section
-        aria-label="Available games"
-        className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-20"
-      >
-        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <section aria-label="All games" className="mx-auto -mt-4 w-full max-w-5xl px-6 pb-16 md:pb-24">
+        <RevealList className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {AVAILABLE_GAMES.map((game) => (
-            <PublicGameCard key={game.slug} game={game} />
+            <RevealItem key={game.slug} className="flex">
+              <PublicGameCard game={game} />
+            </RevealItem>
           ))}
+        </RevealList>
+      </section>
+
+      {/* curtain band: where to start */}
+      <section aria-labelledby="start-heading" className="band-curtain px-6 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <SectionHeading id="start-heading" sub="First game night? Any of these three gets a room going.">
+            Not sure where to start?
+          </SectionHeading>
+          <ol className="panel panel-grain grid md:grid-cols-3">
+            {starters.map(({ game, why }, i) => (
+              <li
+                key={game.slug}
+                className="border-dashed max-md:[&:not(:first-child)]:border-t-[3px] md:[&:not(:first-child)]:border-l-[3px]"
+              >
+                <Link href={`/games/${game.slug}`} className="group flex h-full flex-col items-center gap-3 px-6 py-8 text-center">
+                  <div aria-hidden className="flex h-[112px] items-center justify-center transition-transform duration-200 group-hover:-translate-y-1">
+                    <GamePreview slug={game.slug} />
+                  </div>
+                  <h3 className="font-display mt-1 text-xl leading-tight" style={{ color: "var(--ink)" }}>
+                    <span style={{ color: "var(--tomato)" }}>{i + 1}.</span> {game.name}
+                  </h3>
+                  <p className="font-hand max-w-[26ch] text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+                    {why}
+                  </p>
+                  <span className="font-score mt-auto text-sm uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
+                    See how it plays{" "}
+                    <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="relative z-10 mx-auto w-full max-w-3xl px-6 pb-20 text-center">
-        <div className="panel-paper panel-grain flex flex-col items-center gap-4 p-8" style={{ background: "var(--cream)" }}>
-          <h2 className="font-display text-2xl uppercase" style={{ color: INK }}>
-            Not sure which to start with?
-          </h2>
-          <p className="font-hand text-xl leading-snug" style={{ color: "#4a4460" }}>
-            Two Truths &amp; a Lie is a great opener for groups that don&apos;t know each other well.
-            Fact Frenzy works for any size crowd. Most Likely To is the one that gets the best reactions.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href="/how-it-works"
-              className="font-score rounded-md border-2 border-current px-5 py-2 text-xs uppercase tracking-[0.2em]"
-              style={{ color: INK }}
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/signup"
-              className="btn-rough px-5 py-2 text-lg"
-              style={{ background: "var(--mustard)", color: INK }}
-            >
-              Host a Game Free
-            </Link>
-          </div>
-        </div>
-      </section>
+      <div className="pt-16 md:pt-24">
+        <ClosingCta
+          title="Pick a game, press play"
+          body="Set up a room in under a minute. Your friends just need their phones."
+          cta={{ href: "/signup", label: "Host a free game" }}
+          link={{ href: "/how-it-works", label: "How it works" }}
+        />
+      </div>
     </div>
   );
 }

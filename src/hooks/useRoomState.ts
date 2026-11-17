@@ -14,6 +14,9 @@ export function useRoomState(code: string, playerToken?: string) {
   const [gone, setGone] = useState(false); // 404/410: room missing or expired
   const inflight = useRef(false);
   const queued = useRef(false);
+  // unique per hook instance so multiple panels in the same tab don't share
+  // the same Supabase channel and trigger "cannot add callbacks after subscribe"
+  const instanceId = useRef(Math.random().toString(36).slice(2));
 
   const refresh = useCallback(async () => {
     if (inflight.current) {
@@ -53,7 +56,7 @@ export function useRoomState(code: string, playerToken?: string) {
     const supabase = createClient();
     const onChange = () => void refresh();
     const channel = supabase
-      .channel(`room:${roomId}`)
+      .channel(`room:${roomId}:${instanceId.current}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },

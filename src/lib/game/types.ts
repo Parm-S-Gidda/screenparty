@@ -37,6 +37,7 @@ export type Difficulty = "easy" | "medium" | "hard" | "mixed";
 
 export type GameSettings = {
   packId: string;
+  packSource?: "builtin" | "custom"; // defaults to "builtin" when absent
   questionCount: number;
   difficulty: Difficulty;
   hostMode: "self" | "virtual";
@@ -46,10 +47,14 @@ export type GameSettings = {
   maxRetries: number;
   strictness: "normal";
   maxPlayers: number;
+  hostPersonality?: "pro" | "neutral" | "comedian" | "unhinged";
+  // play the how-to-play tutorial before round 1 (absent on old rooms = on)
+  tutorial?: boolean;
   // two truths and a lie
   variation?: "two_truths" | "two_lies";
   subjectOrder?: string[];
   rounds?: number;
+  collectingSeconds?: number;
   // majority would you rather
   wyrQuestions?: { a: string; b: string }[];
   // team mode (trivia + wyr)
@@ -57,7 +62,7 @@ export type GameSettings = {
   // most likely to
   mltPrompts?: string[];
   // higher or lower: N+1 items (rounds = holItems.length - 1)
-  holItems?: { label: string; value: number; unit: string }[];
+  holItems?: { label: string; value: number; unit: string; category: string }[];
   // guess the player
   gtpPrompts?: { text: string; mode: "prompt" | "fill_blank" }[];
   gtpAnswerOrder?: string[][]; // per prompt, shuffled player IDs
@@ -100,6 +105,7 @@ export type PublicPayload = {
   buzzOpenedAt?: string;
   skipped?: boolean;
   // ── two truths and a lie ───────────────────────────────────────────────────
+  collectingOpenedAt?: string;
   ttalRound?: {
     subjectId: string;
     statements: { id: string; text: string }[];
@@ -123,6 +129,7 @@ export type PublicPayload = {
     correctPredictorIds: string[];
     predictorPoints: number;
     teamMajorities?: Record<TeamId, "a" | "b" | "tie">;
+    timedOut?: boolean;
   };
   teamResult?: {
     totals: Record<TeamId, number>;
@@ -141,9 +148,11 @@ export type PublicPayload = {
   holRound?: {
     leftLabel: string;
     leftUnit: string;
+    leftCategory: string;
     leftValue: number | null; // null = first round (hidden until first reveal)
     rightLabel: string;
     rightUnit: string;
+    rightCategory: string;
     openedAt: string;
   };
   holReveal?: {
@@ -244,6 +253,7 @@ export type GameAction =
   | { type: "SUBMIT_ANSWER"; text: string }
   | { type: "SUBMIT_STATEMENTS"; statements: string[] }
   | { type: "CAST_VOTE"; statementId: string }
+  | { type: "FORCE_COLLECT_DONE" }
   | { type: "SUBMIT_WYR"; choice: "a" | "b"; prediction: "a" | "b" }
   | { type: "SET_TEAM"; playerId: string; team: TeamId }
   | { type: "REVEAL_ROUND" }
@@ -311,6 +321,8 @@ export type RoomStateResponse = {
       | "rounds"
       | "teamsEnabled"
       | "tankPitchSeconds"
+      | "collectingSeconds"
+      | "tutorial"
     >;
   } | null;
   scores: { playerId: string; score: number }[];

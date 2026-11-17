@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BRAND_NAME, LIMITS, AI_HOST_FREE_BETA } from "@/lib/constants";
 import { AVAILABLE_GAMES } from "@/lib/games";
 import { PricingSection } from "@/components/public/PricingSection";
 import { PublicFAQ } from "@/components/public/PublicFAQ";
-import { Breadcrumbs } from "@/components/public/Breadcrumbs";
-import { TapedLabel } from "@/components/cartoon/Panel";
-import { SpotRays } from "@/components/cartoon/Doodles";
+import { ClosingCta, PageHeader, SectionHeading } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `Pricing | ${BRAND_NAME}`,
@@ -16,8 +13,6 @@ export const metadata: Metadata = {
     description: `Start free. ${LIMITS.free.maxPlayers} players, all games, no credit card. Upgrade for larger groups.`,
   },
 };
-
-const INK = "#221f30";
 
 const PRICING_FAQS = [
   {
@@ -54,62 +49,36 @@ const PRICING_FAQS = [
   },
 ];
 
-const FEATURE_ROWS: {
-  feature: string;
-  free: string;
-  partyPass: string;
-  partyPlus: string;
-  proHost: string;
-}[] = [
+const PLAN_NAMES = ["Free", "Party Pass", "Party+", "Pro Host"];
+
+const FEATURE_ROWS: { feature: string; values: string[] }[] = [
   {
     feature: "Players per room",
-    free: `Up to ${LIMITS.free.maxPlayers}`,
-    partyPass: `Up to ${LIMITS.party_plus.maxPlayers}`,
-    partyPlus: `Up to ${LIMITS.party_plus.maxPlayers}`,
-    proHost: `Up to ${LIMITS.pro_host.maxPlayers}`,
+    values: [LIMITS.free.maxPlayers, LIMITS.party_plus.maxPlayers, LIMITS.party_plus.maxPlayers, LIMITS.pro_host.maxPlayers].map(String),
+  },
+  { feature: "Games included", values: PLAN_NAMES.map(() => `All ${AVAILABLE_GAMES.length}`) },
+  {
+    feature: "Room length",
+    values: [LIMITS.free.roomTtlHours, LIMITS.party_plus.roomTtlHours, LIMITS.party_plus.roomTtlHours, LIMITS.pro_host.roomTtlHours].map((h) => `${h} h`),
   },
   {
-    feature: "Games included",
-    free: `All ${AVAILABLE_GAMES.length}`,
-    partyPass: `All ${AVAILABLE_GAMES.length}`,
-    partyPlus: `All ${AVAILABLE_GAMES.length}`,
-    proHost: `All ${AVAILABLE_GAMES.length}`,
-  },
-  {
-    feature: "Room session length",
-    free: `${LIMITS.free.roomTtlHours} hours`,
-    partyPass: `${LIMITS.party_plus.roomTtlHours} hours`,
-    partyPlus: `${LIMITS.party_plus.roomTtlHours} hours`,
-    proHost: `${LIMITS.pro_host.roomTtlHours} hours`,
-  },
-  {
-    feature: "Max questions per game",
-    free: `${LIMITS.free.maxQuestions}`,
-    partyPass: `${LIMITS.party_plus.maxQuestions}`,
-    partyPlus: `${LIMITS.party_plus.maxQuestions}`,
-    proHost: `${LIMITS.pro_host.maxQuestions}`,
+    feature: "Questions per game",
+    values: [LIMITS.free.maxQuestions, LIMITS.party_plus.maxQuestions, LIMITS.party_plus.maxQuestions, LIMITS.pro_host.maxQuestions].map(String),
   },
   {
     feature: "Rooms per day",
-    free: `${LIMITS.free.maxRoomsPerDay}`,
-    partyPass: `${LIMITS.party_plus.maxRoomsPerDay}`,
-    partyPlus: `${LIMITS.party_plus.maxRoomsPerDay}`,
-    proHost: `${LIMITS.pro_host.maxRoomsPerDay}`,
+    values: [LIMITS.free.maxRoomsPerDay, LIMITS.party_plus.maxRoomsPerDay, LIMITS.party_plus.maxRoomsPerDay, LIMITS.pro_host.maxRoomsPerDay].map(String),
   },
   {
-    feature: "Virtual Host games / month",
-    free: `${LIMITS.free.aiHostGamesPerMonth}${AI_HOST_FREE_BETA ? " (beta)" : ""}`,
-    partyPass: `${LIMITS.party_plus.aiHostGamesPerMonth}`,
-    partyPlus: `${LIMITS.party_plus.aiHostGamesPerMonth}`,
-    proHost: `${LIMITS.pro_host.aiHostGamesPerMonth}`,
+    feature: "Virtual Host games a month",
+    values: [
+      `${LIMITS.free.aiHostGamesPerMonth}${AI_HOST_FREE_BETA ? " (beta)" : ""}`,
+      String(LIMITS.party_plus.aiHostGamesPerMonth),
+      String(LIMITS.party_plus.aiHostGamesPerMonth),
+      String(LIMITS.pro_host.aiHostGamesPerMonth),
+    ],
   },
-  {
-    feature: "Subscription required",
-    free: "No",
-    partyPass: "No",
-    partyPlus: "Monthly",
-    proHost: "Monthly",
-  },
+  { feature: "Billing", values: ["None", "Once", "Monthly", "Monthly"] },
 ];
 
 export default function PricingPage() {
@@ -128,61 +97,43 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="relative overflow-hidden">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    <div className="relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <PageHeader
+        crumbs={[
+          { label: BRAND_NAME, href: "/" },
+          { label: "Pricing", href: "/pricing" },
+        ]}
+        title={
+          <>
+            Free game nights, <span style={{ color: "var(--mustard)" }}>bigger ones</span> when you want
+          </>
+        }
+        sub={`Every plan has all ${AVAILABLE_GAMES.length} games. Free covers ${LIMITS.free.maxPlayers} players. Pay only when the room gets bigger, for one night or every night.`}
       />
-      <SpotRays className="absolute left-0 top-0 h-96 w-[50vw] opacity-50" />
 
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pt-12">
-        <Breadcrumbs
-          items={[
-            { label: BRAND_NAME, href: "/" },
-            { label: "Pricing", href: "/pricing" },
-          ]}
-        />
-
-        <div className="mb-10 max-w-2xl">
-          <TapedLabel tilt={-1} color="var(--paper)">
-            <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-              honest pricing
-            </span>
-          </TapedLabel>
-          <h1
-            className="font-display mt-3 text-4xl uppercase tracking-wide md:text-5xl"
-            style={{ color: "var(--cream)" }}
-          >
-            Simple Pricing
-          </h1>
-          <p className="font-hand mt-4 text-xl leading-snug" style={{ color: "var(--muted-foreground)" }}>
-            Start free with all {AVAILABLE_GAMES.length} games and {LIMITS.free.maxPlayers} players. Upgrade for bigger groups or more Virtual Host time.
-            One-night event? The Party Pass is $5.99 with no subscription.
-          </p>
-        </div>
-
-        {/* Pricing cards */}
+      <section aria-label="Plans" className="mx-auto -mt-6 w-full max-w-6xl px-6 pb-16 md:pb-24">
         <PricingSection />
+      </section>
 
-        {/* Feature comparison */}
-        <section aria-labelledby="comparison-heading" className="mt-16">
-          <h2
-            id="comparison-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Full Plan Comparison
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+      {/* curtain band: the full numbers, one table */}
+      <section aria-labelledby="comparison-heading" className="band-curtain px-6 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <SectionHeading id="comparison-heading" sub="Party Pass and Party+ have the same limits. The pass lasts 24 hours and never renews.">
+            Every plan, side by side
+          </SectionHeading>
+          <div className="panel panel-grain overflow-x-auto p-2 md:p-4">
+            <table className="paper-table min-w-[36rem]">
+              <caption className="sr-only">Plan limits compared</caption>
               <thead>
                 <tr>
-                  <th className="panel-paper p-3 text-left" style={{ background: "var(--paper)", color: INK }}>
-                    <span className="font-display text-sm">Feature</span>
+                  <th scope="col" className="font-score text-left text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+                    Limit
                   </th>
-                  {["Free", "Party Pass", "Party+", "Pro Host"].map((plan) => (
-                    <th key={plan} className="panel-paper p-3 text-center" style={{ background: "var(--paper)", color: INK }}>
-                      <span className="font-display text-sm">{plan}</span>
+                  {PLAN_NAMES.map((plan) => (
+                    <th key={plan} scope="col" className="font-display text-center text-lg font-normal">
+                      {plan}
                     </th>
                   ))}
                 </tr>
@@ -190,12 +141,12 @@ export default function PricingPage() {
               <tbody>
                 {FEATURE_ROWS.map((row) => (
                   <tr key={row.feature}>
-                    <td className="panel-paper p-3" style={{ background: "var(--cream)" }}>
-                      <span className="font-hand text-lg" style={{ color: "#4a4460" }}>{row.feature}</span>
-                    </td>
-                    {[row.free, row.partyPass, row.partyPlus, row.proHost].map((val, i) => (
-                      <td key={i} className="panel-paper p-3 text-center" style={{ background: "var(--cream)" }}>
-                        <span className="font-score text-sm" style={{ color: INK }}>{val}</span>
+                    <th scope="row" className="font-hand text-left text-lg font-normal" style={{ color: "var(--ink-body)" }}>
+                      {row.feature}
+                    </th>
+                    {row.values.map((val, i) => (
+                      <td key={i} className="text-center text-base">
+                        {val}
                       </td>
                     ))}
                   </tr>
@@ -203,37 +154,20 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="faq-heading" className="mt-16">
-          <h2
-            id="faq-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Pricing Questions
-          </h2>
-          <PublicFAQ items={PRICING_FAQS} />
-        </section>
-
-        {/* CTA */}
-        <div className="mb-20 mt-12 text-center">
-          <p className="font-display text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-            Start with the free plan
-          </p>
-          <p className="font-hand mt-2 text-xl" style={{ color: "var(--muted-foreground)" }}>
-            No credit card. All {AVAILABLE_GAMES.length} games. {LIMITS.free.maxPlayers} players. Upgrade whenever you&apos;re ready.
-          </p>
-          <Link
-            href="/signup"
-            className="btn-rough mt-6 inline-flex px-10 py-4 text-xl"
-            style={{ background: "var(--mustard)", color: INK }}
-          >
-            Host Free
-          </Link>
         </div>
-      </div>
+      </section>
+
+      <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-3xl px-6 py-16 md:py-24">
+        <SectionHeading id="faq-heading">Pricing questions</SectionHeading>
+        <PublicFAQ items={PRICING_FAQS} />
+      </section>
+
+      <ClosingCta
+        title="Start with the free plan"
+        body={`No credit card. All ${AVAILABLE_GAMES.length} games, up to ${LIMITS.free.maxPlayers} players. Upgrade whenever the party grows.`}
+        cta={{ href: "/signup", label: "Host a free game" }}
+        link={{ href: "/games", label: "Browse the games" }}
+      />
     </div>
   );
 }

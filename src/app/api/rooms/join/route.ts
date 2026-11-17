@@ -10,7 +10,7 @@ import { rateLimit } from "@/lib/rateLimit";
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get("x-forwarded-for") ?? "local";
-    if (!rateLimit(`join:${ip}`, 20, 60_000))
+    if (!await rateLimit(`join:${ip}`, 20, 60_000))
       throw new GameError(429, "Too many join attempts, slow down");
 
     const body = await request.json();

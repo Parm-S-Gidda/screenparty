@@ -342,6 +342,8 @@ export async function GET(
           rounds: session.settings?.rounds,
           teamsEnabled: session.settings?.teamsEnabled ?? false,
           tankPitchSeconds: session.settings?.tankPitchSeconds,
+          collectingSeconds: session.settings?.collectingSeconds,
+          tutorial: session.settings?.tutorial ?? true,
         },
       },
       scores: (scores ?? []).map((s) => ({ playerId: s.player_id, score: s.score })),

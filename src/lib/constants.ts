@@ -44,6 +44,8 @@ export const LIMITS = {
     maxRoomsPerDay: 10,
     aiHostGamesPerMonth: 3,
     elevenLabsCharsPerMonth: 10_000,
+    customPacksMax: 3,
+    aiPackGenPerMonth: 0,
   },
   party_plus: {
     maxPlayers: 20,
@@ -52,6 +54,8 @@ export const LIMITS = {
     maxRoomsPerDay: 25,
     aiHostGamesPerMonth: 25,
     elevenLabsCharsPerMonth: 50_000,
+    customPacksMax: 15,
+    aiPackGenPerMonth: 5,
   },
   pro_host: {
     maxPlayers: 50,
@@ -60,6 +64,8 @@ export const LIMITS = {
     maxRoomsPerDay: 100,
     aiHostGamesPerMonth: 100,
     elevenLabsCharsPerMonth: 200_000,
+    customPacksMax: 50,
+    aiPackGenPerMonth: 20,
   },
   usernameMaxLength: 16,
   answerMaxLength: 120,
@@ -147,11 +153,17 @@ export const NUM_POINTS = {
 export const ATTEMPT_POINTS = [100, 75, 50, 25, 10] as const;
 
 export const QUESTION_COUNT_OPTIONS = [5, 10, 15, 25] as const;
+export const CUSTOM_PACK_QUESTION_MAX = 50;
+export const CUSTOM_PACK_TITLE_MAX = 60;
+export const CUSTOM_QUESTION_TEXT_MAX = 300;
+export const CUSTOM_ANSWER_MAX = 120;
 
 // Two Truths and a Lie: how many full cycles (everyone writes new statements
 // each round and takes a turn as the subject)
 export const TTAL_ROUND_OPTIONS = [1, 2, 3, 4, 5] as const;
 export const TTAL_DEFAULT_ROUNDS = 3;
+export const TTAL_COLLECT_SECOND_OPTIONS = [30, 60, 90, 120] as const;
+export const TTAL_DEFAULT_COLLECT_SECONDS = 90;
 export const AUTO_SKIP_OPTIONS = [15, 30, 45] as const;
 
 // PRD open decision #12: AI host free during beta. Flip to false when Phase 4

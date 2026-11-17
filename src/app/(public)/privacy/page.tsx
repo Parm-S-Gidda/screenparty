@@ -1,42 +1,24 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BRAND_NAME } from "@/lib/constants";
-import { Breadcrumbs } from "@/components/public/Breadcrumbs";
-import { TapedLabel } from "@/components/cartoon/Panel";
+import { LegalDoc, LegalSection, PageHeader, TextLink } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `Privacy Policy | ${BRAND_NAME}`,
   description: `How ScreenParty collects, uses, and protects your data.`,
 };
 
-const INK = "#221f30";
-
 export default function PrivacyPage() {
   return (
-    <div className="relative z-10 mx-auto w-full max-w-3xl px-6 pt-12 pb-20">
-      <Breadcrumbs
-        items={[
+    <div className="relative">
+      <PageHeader
+        crumbs={[
           { label: BRAND_NAME, href: "/" },
           { label: "Privacy Policy", href: "/privacy" },
         ]}
+        title="Privacy Policy"
+        actions={<TextLink href="/terms">Terms of Service →</TextLink>}
       />
-
-      <TapedLabel tilt={-1} color="var(--paper)">
-        <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-          legal
-        </span>
-      </TapedLabel>
-      <h1
-        className="font-display mt-3 text-4xl uppercase tracking-wide"
-        style={{ color: "var(--cream)" }}
-      >
-        Privacy Policy
-      </h1>
-      <p className="font-hand mt-2 text-lg" style={{ color: "var(--muted-foreground)" }}>
-        Last updated: July 2026
-      </p>
-
-      <div className="prose-custom mt-8 flex flex-col gap-6">
+      <LegalDoc updated="July 2026">
         <LegalSection title="Overview">
           <p>
             ScreenParty (&ldquo;we,&rdquo; &ldquo;our,&rdquo; &ldquo;us&rdquo;) operates the
@@ -50,7 +32,7 @@ export default function PrivacyPage() {
         </LegalSection>
 
         <LegalSection title="Data We Collect">
-          <h3 className="font-display text-lg" style={{ color: INK }}>Host accounts</h3>
+          <h3 className="font-display text-lg" style={{ color: "var(--ink)" }}>Host accounts</h3>
           <ul>
             <li>Email address (required for sign-up)</li>
             <li>Password (stored as a secure hash, never in plain text)</li>
@@ -58,7 +40,7 @@ export default function PrivacyPage() {
             <li>Usage data: rooms created, games played, Virtual Host sessions used</li>
           </ul>
 
-          <h3 className="font-display mt-4 text-lg" style={{ color: INK }}>Players (anonymous)</h3>
+          <h3 className="font-display mt-4 text-lg" style={{ color: "var(--ink)" }}>Players (anonymous)</h3>
           <ul>
             <li>Display name chosen at join time</li>
             <li>Avatar selection</li>
@@ -66,7 +48,7 @@ export default function PrivacyPage() {
             <li>A temporary session token stored in localStorage, expires with the room</li>
           </ul>
 
-          <h3 className="font-display mt-4 text-lg" style={{ color: INK }}>Automatically collected</h3>
+          <h3 className="font-display mt-4 text-lg" style={{ color: "var(--ink)" }}>Automatically collected</h3>
           <ul>
             <li>Basic page-view analytics via Vercel Analytics (no cookies, privacy-safe)</li>
             <li>IP address and browser type for security and abuse prevention</li>
@@ -153,30 +135,7 @@ export default function PrivacyPage() {
             address associated with your host account.
           </p>
         </LegalSection>
-      </div>
-
-      <div className="mt-8">
-        <Link href="/terms" className="font-score text-[10px] uppercase tracking-[0.25em] underline" style={{ color: "var(--cream)" }}>
-          Terms of Service →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const INK = "#221f30";
-  return (
-    <div className="panel-paper panel-grain p-6" style={{ background: "var(--cream)" }}>
-      <h2 className="font-display mb-3 text-xl uppercase tracking-wide" style={{ color: INK }}>
-        {title}
-      </h2>
-      <div
-        className="font-hand flex flex-col gap-2 text-lg leading-snug [&_li]:ml-4 [&_li]:list-disc [&_strong]:font-display [&_p]:leading-snug"
-        style={{ color: "#4a4460" }}
-      >
-        {children}
-      </div>
+      </LegalDoc>
     </div>
   );
 }

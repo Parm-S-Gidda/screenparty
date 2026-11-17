@@ -3,10 +3,9 @@ import Link from "next/link";
 import { BRAND_NAME, LIMITS, AI_HOST_FREE_BETA } from "@/lib/constants";
 import { AVAILABLE_GAMES } from "@/lib/games";
 import { Mascot } from "@/components/cartoon/Mascot";
-import { TapedLabel } from "@/components/cartoon/Panel";
-import { DoodleStar, SpotRays } from "@/components/cartoon/Doodles";
 import { PublicFAQ } from "@/components/public/PublicFAQ";
-import { Breadcrumbs } from "@/components/public/Breadcrumbs";
+import { RevealItem, RevealList } from "@/components/public/Reveal";
+import { ClosingCta, PageHeader, SectionHeading, TextLink } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `Virtual Game Host for Party Games | ${BRAND_NAME}`,
@@ -18,8 +17,6 @@ export const metadata: Metadata = {
       "Turn on the Virtual Host and play along with everyone else. It reads questions, announces results, and keeps the game moving.",
   },
 };
-
-const INK = "#221f30";
 
 const VH_FAQS = [
   {
@@ -65,275 +62,191 @@ export default function VirtualHostPage() {
     })),
   };
 
+  const jobs = [
+    {
+      cue: "Question up",
+      title: "Reads everything out loud",
+      body: "Questions, prompts, answers and results are spoken, so nobody has to squint at the TV.",
+    },
+    {
+      cue: "Buzz!",
+      title: "Reacts to the room",
+      body: "Right answers get a cheer, close calls get a comment, upsets get a reaction. It responds to what actually happened.",
+    },
+    {
+      cue: "Next round",
+      title: "Keeps the night moving",
+      body: "No button presses between rounds. It handles the timing and transitions, so the host plays too.",
+    },
+    {
+      cue: `All ${AVAILABLE_GAMES.length} games`,
+      title: "Hosts every game",
+      body: "From buzz-in trivia to Shark Tank pitches. Turn it on for any game, or leave it off and run the show yourself.",
+    },
+  ];
+
+  const planRows = [
+    { plan: "Free", games: `${LIMITS.free.aiHostGamesPerMonth}${AI_HOST_FREE_BETA ? " (free in beta)" : ""}` },
+    { plan: "Party Pass (24 h)", games: String(LIMITS.party_plus.aiHostGamesPerMonth) },
+    { plan: "Party+", games: String(LIMITS.party_plus.aiHostGamesPerMonth) },
+    { plan: "Pro Host", games: String(LIMITS.pro_host.aiHostGamesPerMonth) },
+  ];
+
   return (
-    <div className="relative overflow-hidden">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <SpotRays className="absolute left-0 top-0 h-full max-h-screen w-[55vw] opacity-50" />
-      <SpotRays flip className="absolute right-0 top-0 h-full max-h-screen w-[55vw] opacity-30" />
+    <div className="relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="relative z-10 mx-auto w-full max-w-4xl px-6 pt-12">
-        <Breadcrumbs
-          items={[
-            { label: BRAND_NAME, href: "/" },
-            { label: "Virtual Host", href: "/virtual-host" },
-          ]}
-        />
-
-        {/* Hero */}
-        <div className="grid items-center gap-10 md:grid-cols-2">
-          <div>
-            <TapedLabel tilt={-1} color="var(--paper)">
-              <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-                optional · all 9 games
+      <PageHeader
+        crumbs={[
+          { label: BRAND_NAME, href: "/" },
+          { label: "Virtual Host", href: "/virtual-host" },
+        ]}
+        title={
+          <>
+            Let the <span style={{ color: "var(--mustard)" }}>Virtual Host</span> run the show
+          </>
+        }
+        sub="Turn it on and play along with everyone else. It reads the questions, reacts to buzzes and answers, announces results and keeps the night moving."
+        actions={
+          <>
+            <Link href="/signup" className="btn-rough px-7 py-3 text-xl">
+              Try it free
+            </Link>
+            <TextLink href="/games">Choose a game</TextLink>
+          </>
+        }
+        aside={
+          // the host, on air: a mascot standing in for the Virtual Host with its caption
+          <div className="flex justify-center" aria-hidden>
+            <div className="panel panel-grain relative w-full max-w-sm p-8">
+              <span className="chip absolute -top-3.5 left-6">
+                <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: "var(--tomato)" }} />
+                On air
               </span>
-            </TapedLabel>
-            <h1
-              className="font-display mt-3 text-4xl uppercase tracking-wide md:text-5xl"
-              style={{ color: "var(--cream)" }}
-            >
-              Meet the {BRAND_NAME} Virtual Host
-            </h1>
-            <p className="font-hand mt-4 text-xl leading-snug" style={{ color: "var(--muted-foreground)" }}>
-              Turn on the Virtual Host and play along with everyone else. It can read questions,
-              explain rounds, announce results, keep the game moving, and react to what happens in
-              the room.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <Link
-                href="/signup"
-                className="btn-rough px-6 py-3 text-xl"
-                style={{ background: "var(--mustard)", color: INK }}
-              >
-                Try It Free
-              </Link>
-              <Link
-                href="/games"
-                className="font-score rounded-md border-2 border-current px-5 py-3 text-xs uppercase tracking-[0.2em]"
-                style={{ color: "var(--cream)" }}
-              >
-                Choose a Game
-              </Link>
-            </div>
-          </div>
-
-          {/* Character panel */}
-          <div className="flex justify-center">
-            <div className="panel relative p-8" style={{ background: "var(--cream)" }}>
-              <div className="flex flex-col items-center gap-4">
-                <Mascot avatarId="wizard" size={110} expression="winner" animate={false} />
-                <div className="panel-paper -rotate-1 px-4 py-2 text-center" style={{ background: "var(--paper)" }}>
-                  <p className="font-hand text-xl" style={{ color: INK }}>
-                    &ldquo;Interesting choice -<br />let&apos;s see what the room thinks!&rdquo;
+              <div className="flex flex-col items-center gap-5">
+                <Mascot avatarId="wizard" size={120} expression="winner" animate={false} />
+                <div className="w-full rounded-lg border-[3px] px-4 py-3 text-center" style={{ borderColor: "var(--ink)", background: "var(--stage-bg)" }}>
+                  <p className="font-hand text-xl leading-snug" style={{ color: "var(--cream)" }}>
+                    &ldquo;Interesting choice. Let&apos;s see what the room thinks!&rdquo;
                   </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        }
+      />
 
-        {/* What it does */}
-        <section aria-labelledby="what-heading" className="mt-16">
-          <h2
-            id="what-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            What the Virtual Host Does
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              {
-                headline: "Reads everything out loud",
-                body: "Questions, prompts, player answers, and results are spoken aloud so everyone can follow along without staring at the big screen.",
-              },
-              {
-                headline: "Reacts to what happens",
-                body: "Correct answers get recognition. Close calls get a comment. A surprising result gets a reaction. The Virtual Host responds to game events, not a script.",
-              },
-              {
-                headline: "Advances the game automatically",
-                body: "No manual button presses between rounds. The Virtual Host manages timing and transitions so the host can play like everyone else.",
-              },
-              {
-                headline: "Works on all 9 games",
-                body: "Fact Frenzy, Two Truths & a Lie, Would You Rather, Most Likely To, Higher or Lower, Guess the Player, Shark Tank, Charades, and Number Rating.",
-              },
-            ].map(({ headline, body }) => (
-              <div
-                key={headline}
-                className="panel-paper panel-grain flex flex-col gap-2 p-5"
-                style={{ background: "var(--cream)" }}
+      {/* curtain band: what it does, as cues on a run sheet */}
+      <section aria-labelledby="what-heading" className="band-curtain px-6 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <SectionHeading id="what-heading">What the host does on every cue</SectionHeading>
+          <RevealList as="ol" className="panel panel-grain grid sm:grid-cols-2">
+            {jobs.map((job, i) => (
+              <RevealItem
+                as="li"
+                key={job.title}
+                className={`flex flex-col items-start gap-3 border-dashed p-6 md:p-8 ${i > 0 ? "max-sm:border-t-[3px]" : ""} ${i % 2 === 1 ? "sm:border-l-[3px]" : ""} ${i > 1 ? "sm:border-t-[3px]" : ""}`}
               >
-                <h3 className="font-display text-xl leading-tight" style={{ color: INK }}>
-                  {headline}
+                <span className="chip">{job.cue}</span>
+                <h3 className="font-display text-xl leading-tight" style={{ color: "var(--ink)" }}>
+                  {job.title}
                 </h3>
-                <p className="font-hand text-lg leading-snug" style={{ color: "#4a4460" }}>
-                  {body}
+                <p className="font-hand max-w-[44ch] text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+                  {job.body}
                 </p>
-              </div>
+              </RevealItem>
             ))}
-          </div>
-        </section>
-
-        {/* Plan limits */}
-        <section aria-labelledby="limits-heading" className="mt-14">
-          <h2
-            id="limits-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Virtual Host on Each Plan
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th
-                    className="panel-paper p-4 text-left"
-                    style={{ background: "var(--cream)", color: INK }}
-                  >
-                    <span className="font-display text-base">Plan</span>
-                  </th>
-                  <th
-                    className="panel-paper p-4 text-left"
-                    style={{ background: "var(--cream)", color: INK }}
-                  >
-                    <span className="font-display text-base">Virtual Host Games / Month</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { plan: "Free", games: LIMITS.free.aiHostGamesPerMonth },
-                  { plan: "Party Pass (24 h)", games: LIMITS.party_plus.aiHostGamesPerMonth },
-                  { plan: "Party+", games: LIMITS.party_plus.aiHostGamesPerMonth },
-                  { plan: "Pro Host", games: LIMITS.pro_host.aiHostGamesPerMonth },
-                ].map(({ plan, games }) => (
-                  <tr key={plan}>
-                    <td className="panel-paper p-4" style={{ background: "var(--cream)" }}>
-                      <span className="font-hand text-xl" style={{ color: "#4a4460" }}>{plan}</span>
-                    </td>
-                    <td className="panel-paper p-4" style={{ background: "var(--cream)" }}>
-                      <span className="font-score text-2xl font-bold" style={{ color: INK }}>
-                        {games}
-                        {plan === "Free" && AI_HOST_FREE_BETA && (
-                          <span className="font-hand ml-2 text-sm font-normal" style={{ color: "#8a7f63" }}>
-                            (free during beta)
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="font-hand mt-3 text-lg" style={{ color: "var(--muted-foreground)" }}>
-            Limits reset at the start of each billing cycle. Unused sessions do not roll over.
-            When you reach your limit, the game continues in manual mode.
-          </p>
-        </section>
-
-        {/* Technology note */}
-        <section aria-labelledby="tech-heading" className="mt-14">
-          <h2
-            id="tech-heading"
-            className="font-display mb-4 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            About the Technology
-          </h2>
-          <div className="panel-paper panel-grain p-6" style={{ background: "var(--cream)" }}>
-            <p className="font-hand text-xl leading-snug" style={{ color: "#4a4460" }}>
-              The Virtual Host uses artificial intelligence to generate voice audio and context-aware
-              reactions. Voice synthesis is powered by ElevenLabs. Game-state processing (reading
-              answers, judging trivia responses) uses language model technology. The Virtual Host
-              does not use microphones, does not record conversations, and does not process any
-              audio input from the room.
-            </p>
-            <p className="font-hand mt-3 text-xl leading-snug" style={{ color: "#4a4460" }}>
-              Player-submitted text (answers, statements, pitches) passes through AI processing for
-              game mechanics like trivia judging and reaction generation. See our{" "}
-              <Link href="/privacy" className="underline" style={{ color: INK }}>
-                privacy policy
-              </Link>{" "}
-              for details on how this data is handled.
-            </p>
-          </div>
-        </section>
-
-        {/* Games list */}
-        <section aria-labelledby="games-heading" className="mt-14">
-          <h2
-            id="games-heading"
-            className="font-display mb-4 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Virtual Host, Supported Games
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-            {AVAILABLE_GAMES.map((game) => (
-              <Link
-                key={game.slug}
-                href={`/games/${game.slug}`}
-                className="panel-paper panel-grain flex items-center gap-3 p-3 transition-opacity hover:opacity-80"
-                style={{ background: "var(--cream)" }}
-              >
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2"
-                  style={{ background: game.color, borderColor: INK }}
-                  aria-hidden
-                />
-                <div>
-                  <span className="font-display text-base leading-tight" style={{ color: INK }}>
-                    {game.name}
-                  </span>
-                  <span className="font-score ml-2 text-[9px] uppercase tracking-widest" style={{ color: "var(--teal)" }}>
-                    ✓ supported
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="faq-heading" className="mt-14">
-          <h2
-            id="faq-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Virtual Host Questions
-          </h2>
-          <PublicFAQ items={VH_FAQS} withSchema={false} />
-        </section>
-
-        {/* CTA */}
-        <div className="mb-20 mt-12 text-center">
-          <div className="panel-paper panel-grain inline-flex flex-col items-center gap-4 px-10 py-8" style={{ background: "var(--cream)" }}>
-            <DoodleStar size={30} />
-            <h2 className="font-display text-2xl uppercase" style={{ color: INK }}>
-              Try the Virtual Host free
-            </h2>
-            <p className="font-hand text-xl" style={{ color: "#4a4460" }}>
-              {AI_HOST_FREE_BETA
-                ? `Included on all plans during beta. ${LIMITS.free.aiHostGamesPerMonth} game sessions per month on the free plan.`
-                : "Available on paid plans."}
-            </p>
-            <Link
-              href="/signup"
-              className="btn-rough px-8 py-3 text-xl"
-              style={{ background: "var(--mustard)", color: INK }}
-            >
-              Host a Game Free
-            </Link>
-          </div>
+          </RevealList>
         </div>
-      </div>
+      </section>
+
+      <section aria-labelledby="limits-heading" className="mx-auto w-full max-w-3xl px-6 py-16 md:py-24">
+        <SectionHeading
+          id="limits-heading"
+          sub="Limits reset each billing cycle and don't roll over. Hit the limit and the game carries on with you hosting."
+        >
+          Virtual Host on each plan
+        </SectionHeading>
+        <div className="panel-paper panel-grain p-2 md:p-4">
+          <table className="paper-table">
+            <caption className="sr-only">Virtual Host games per month by plan</caption>
+            <thead>
+              <tr>
+                <th scope="col" className="font-score text-left text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+                  Plan
+                </th>
+                <th scope="col" className="font-score text-right text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+                  Hosted games a month
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {planRows.map((row) => (
+                <tr key={row.plan}>
+                  <th scope="row" className="font-display text-left text-lg font-normal">
+                    {row.plan}
+                  </th>
+                  <td className="text-right text-xl">{row.games}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="tech-heading" className="mx-auto w-full max-w-3xl px-6 pb-16 md:pb-24">
+        <SectionHeading id="tech-heading" align="left">
+          About the technology
+        </SectionHeading>
+        <div className="font-hand flex max-w-[62ch] flex-col gap-4 text-xl leading-snug" style={{ color: "var(--cream-muted)" }}>
+          <p>
+            The Virtual Host uses artificial intelligence to generate voice audio and context-aware reactions. Voice synthesis
+            is powered by ElevenLabs. Game-state processing (reading answers, judging trivia responses) uses language model
+            technology. It does not use microphones, does not record conversations, and does not process any audio from the room.
+          </p>
+          <p>
+            Player-submitted text (answers, statements, pitches) passes through AI processing for game mechanics like trivia
+            judging and reaction generation. See our{" "}
+            <Link href="/privacy" className="underline decoration-2 underline-offset-4" style={{ color: "var(--cream)" }}>
+              privacy policy
+            </Link>{" "}
+            for how this data is handled.
+          </p>
+        </div>
+        <h3 className="font-display mt-12 text-xl" style={{ color: "var(--cream)" }}>
+          Hosts all {AVAILABLE_GAMES.length} games
+        </h3>
+        <ul className="mt-4 flex flex-wrap gap-2">
+          {AVAILABLE_GAMES.map((game) => (
+            <li key={game.slug}>
+              <Link
+                href={`/games/${game.slug}`}
+                className="font-score flex min-h-11 items-center gap-2 rounded-lg border-[3px] px-3 text-sm uppercase tracking-[0.1em] transition-transform hover:-translate-y-0.5"
+                style={{ borderColor: "var(--ink)", background: "var(--cream)", color: "var(--ink)", boxShadow: "3px 3px 0 rgba(0,0,0,0.45)" }}
+              >
+                <span aria-hidden className="h-3 w-3 rounded-full border-2" style={{ background: game.color, borderColor: "var(--ink)" }} />
+                {game.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-3xl px-6 pb-16 md:pb-24">
+        <SectionHeading id="faq-heading">Virtual Host questions</SectionHeading>
+        <PublicFAQ items={VH_FAQS} withSchema={false} />
+      </section>
+
+      <ClosingCta
+        title="Try the Virtual Host free"
+        body={
+          AI_HOST_FREE_BETA
+            ? `Included on every plan during beta. ${LIMITS.free.aiHostGamesPerMonth} hosted games a month on Free.`
+            : "Available on paid plans."
+        }
+        cta={{ href: "/signup", label: "Host a free game" }}
+        link={{ href: "/how-it-works", label: "How it works" }}
+      />
     </div>
   );
 }

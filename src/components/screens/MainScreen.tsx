@@ -6,6 +6,8 @@ import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useRoomState } from "@/hooks/useRoomState";
 import { useVirtualHostDriver } from "@/hooks/useVirtualHostDriver";
 import { CaptionBar } from "@/components/game/CaptionBar";
+import { TutorialPlayer } from "@/components/tutorial/TutorialPlayer";
+import { getTutorial } from "@/lib/tutorials";
 import { sendAction } from "@/lib/gameClient";
 import { Scoreboard, finalPlayersAndScores, rankPlayers } from "@/components/game/Scoreboard";
 import { Podium } from "@/components/game/Podium";
@@ -59,14 +61,16 @@ const GAME_TITLES: Record<string, string> = {
   gtp: "Guess the Player",
   tank: "Shark Tank",
   charades: "Charades",
-  num: "Number Rating",
+  num: "Number Crunch",
 };
 
 export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }) {
   const { state, gone } = useRoomState(code);
   const [actionError, setActionError] = useState<string | null>(null);
+  // how-to-play demo runs on this screen between "Start the show!" and round 1
+  const [inTutorial, setInTutorial] = useState(false);
   const isVirtual = state?.session?.hostMode === "virtual";
-  const { caption, skip } = useVirtualHostDriver(code, state, isOwner && isVirtual);
+  const { caption, skip, speaking } = useVirtualHostDriver(code, state, isOwner && isVirtual);
 
   const act = useCallback(
     async (action: GameAction) => {
@@ -151,6 +155,9 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
 
   const { session } = state;
   const payload = session.payload;
+  const tutorial = session.settings.tutorial !== false ? getTutorial(session.gameType, session.hostMode) : null;
+  const showTutorial = inTutorial && session.state === "LOBBY" && tutorial;
+  const start = () => (tutorial ? setInTutorial(true) : act({ type: "START_GAME" }));
   // remount + shake the stage when a new buzz lands
   const shakeKey =
     session.state === "PLAYER_BUZZED" && payload.buzz
@@ -169,7 +176,7 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
             title={GAME_TITLES[session.gameType]}
             subtitle={
               session.state === "LOBBY"
-                ? "the lobby"
+                ? showTutorial ? "how to play" : "the lobby"
                 : session.state === "GAME_OVER"
                   ? "final results"
                   : session.state === "COLLECTING"
@@ -226,20 +233,32 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
             // AI host: keep the stage clear of the fixed caption bubble at the
             // bottom so it never covers content (reserved even between lines
             // to avoid layout jumps). Two caption lines + tail ≈ 10rem.
-            isVirtual && "pb-40",
+            (isVirtual || showTutorial) && "pb-40",
             session.state === "PLAYER_BUZZED" && "anim-shake"
           )}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={session.state}
+              key={showTutorial ? "tutorial" : session.state}
               initial={{ opacity: 0, y: 18, rotate: -0.5 }}
               animate={{ opacity: 1, y: 0, rotate: 0 }}
               exit={{ opacity: 0, y: -18 }}
               transition={{ duration: 0.22 }}
               className="flex w-full max-w-5xl flex-col items-center"
             >
-              <StateView state={state} isOwner={isOwner} act={act} />
+              {showTutorial ? (
+                <TutorialPlayer
+                  gameType={session.gameType}
+                  hostMode={session.hostMode}
+                  steps={tutorial}
+                  onDone={() => {
+                    setInTutorial(false);
+                    void act({ type: "START_GAME" });
+                  }}
+                />
+              ) : (
+                <StateView state={state} isOwner={isOwner} act={act} speaking={speaking} onStart={start} />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -293,15 +312,19 @@ function StateView({
   state,
   isOwner,
   act,
+  speaking,
+  onStart,
 }: {
   state: RoomStateResponse;
   isOwner: boolean;
   act: (action: GameAction) => Promise<void>;
+  speaking?: boolean;
+  onStart: () => void;
 }) {
   const session = state.session!;
   switch (session.state) {
     case "LOBBY":
-      return <LobbyView state={state} isOwner={isOwner} act={act} />;
+      return <LobbyView state={state} isOwner={isOwner} act={act} onStart={onStart} />;
     case "QUESTION_PREVIEW":
       return <PreviewView state={state} />;
     case "BUZZ_OPEN":
@@ -318,7 +341,7 @@ function StateView({
       return <WyrChoosingView state={state} isOwner={isOwner} act={act} />;
     // Most Likely To
     case "MLT_VOTING":
-      return <MltVotingView state={state} isOwner={isOwner} act={act} />;
+      return <MltVotingView state={state} isOwner={isOwner} act={act} speaking={speaking} />;
     // Higher or Lower
     case "HOL_VOTING":
       return <HolVotingView state={state} isOwner={isOwner} act={act} />;
@@ -339,7 +362,7 @@ function StateView({
       return <CharadesActingView state={state} isOwner={isOwner} act={act} />;
     // Number Rating
     case "NUM_SUBMITTING":
-      return <NumSubmittingView state={state} />;
+      return <NumSubmittingView state={state} isOwner={isOwner} act={act} />;
     case "NUM_GUESSING":
       return <NumGuessingView state={state} isOwner={isOwner} act={act} />;
     case "REVEAL":
@@ -379,10 +402,12 @@ function LobbyView({
   state,
   isOwner,
   act,
+  onStart,
 }: {
   state: RoomStateResponse;
   isOwner: boolean;
   act: (action: GameAction) => Promise<void>;
+  onStart: () => void;
 }) {
   const session = state.session!;
   // trivia and TTAL self-host need a designated player-host; WYR is paced from here
@@ -456,7 +481,7 @@ function LobbyView({
           <RoughButton
             className="px-12 py-4 text-3xl"
             disabled={state.players.length === 0 || needsHost || needMorePlayers}
-            onClick={() => act({ type: "START_GAME" })}
+            onClick={onStart}
           >
             Start the show!
           </RoughButton>

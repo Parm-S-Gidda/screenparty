@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_NAME, LIMITS } from "@/lib/constants";
 import { AVAILABLE_GAMES } from "@/lib/games";
-import { Mascot } from "@/components/cartoon/Mascot";
-import { TapedLabel } from "@/components/cartoon/Panel";
-import { DoodleStar, SpotRays } from "@/components/cartoon/Doodles";
 import { PublicFAQ } from "@/components/public/PublicFAQ";
-import { Breadcrumbs } from "@/components/public/Breadcrumbs";
+import { RevealItem, RevealList } from "@/components/public/Reveal";
+import { ClosingCta, PageHeader, SectionHeading, TextLink } from "@/components/public/PageParts";
 
 export const metadata: Metadata = {
   title: `How ScreenParty Works | Phone-Controlled Party Games`,
@@ -18,8 +16,6 @@ export const metadata: Metadata = {
       "One screen, everyone's phone, no app. Learn how to set up ScreenParty on a TV, laptop, or projector.",
   },
 };
-
-const INK = "#221f30";
 
 const HOW_FAQS = [
   {
@@ -91,250 +87,210 @@ export default function HowItWorksPage() {
     ],
   };
 
+  const steps = [
+    {
+      title: "Make a free host account",
+      body: "Sign up in under a minute. No credit card. Players never need an account.",
+      link: { label: "Sign up free", href: "/signup" },
+    },
+    {
+      title: "Pick a game and open a room",
+      body: `Choose from ${AVAILABLE_GAMES.length} games, set the rounds, and pick who hosts: you or the Virtual Host. You get a four-letter room code.`,
+      link: { label: "Browse games", href: "/games" },
+    },
+    {
+      title: "Put the room on the big screen",
+      body: "Open it on a TV, laptop, monitor or projector. The room code goes up in lights for everyone to see.",
+    },
+    {
+      title: "Everyone joins from their phone",
+      body: "Players go to screenparty.gg/join, type the code and pick a character. They pop into the lobby on the big screen.",
+      link: { label: "See the join page", href: "/join" },
+    },
+    {
+      title: "Press start",
+      body: "Run each round yourself, or let the Virtual Host read the questions, call the results and keep the pace while you play too.",
+    },
+  ];
+
+  const modes = [
+    {
+      name: "You host",
+      plan: "Every plan",
+      points: [
+        "You advance each round with a button",
+        "Questions appear on screen in silence",
+        "Add your own commentary and jokes",
+        "Full control of the pace",
+      ],
+    },
+    {
+      name: "Virtual Host",
+      plan: `Free in beta · ${LIMITS.free.aiHostGamesPerMonth} games a month on Free`,
+      points: [
+        "Reads every question and prompt out loud",
+        "Reacts to buzzes, answers and results",
+        "Moves to the next round on its own",
+        "You play on your phone like everyone else",
+      ],
+      link: { label: "Meet the Virtual Host", href: "/virtual-host" },
+    },
+  ];
+
+  const devices = [
+    {
+      label: "The big screen",
+      items: ["Any laptop or desktop browser", "A smart TV browser", "A laptop plugged into a TV", "A projector on any computer", "An iPad on a stand"],
+    },
+    {
+      label: "The controllers",
+      items: ["iPhone with Safari or Chrome", "Android with Chrome or Firefox", "Any tablet", "Anything with a modern browser", "Nothing to install"],
+    },
+  ];
+
   return (
-    <div className="relative overflow-hidden">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    <div className="relative">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <PageHeader
+        crumbs={[
+          { label: BRAND_NAME, href: "/" },
+          { label: "How It Works", href: "/how-it-works" },
+        ]}
+        title={
+          <>
+            One screen, <span style={{ color: "var(--mustard)" }}>everyone&apos;s phone</span>
+          </>
+        }
+        sub="The game goes on the TV. Phones become the controllers. No app, no console, no accounts for players."
+        actions={
+          <>
+            <Link href="/signup" className="btn-rough px-7 py-3 text-xl">
+              Host a free game
+            </Link>
+            <TextLink href="/games">Browse games</TextLink>
+          </>
+        }
       />
-      <SpotRays className="absolute left-0 top-0 h-96 w-[50vw] opacity-50" />
 
-      <div className="relative z-10 mx-auto w-full max-w-4xl px-6 pt-12">
-        <Breadcrumbs
-          items={[
-            { label: BRAND_NAME, href: "/" },
-            { label: "How It Works", href: "/how-it-works" },
-          ]}
-        />
-
-        <TapedLabel tilt={-1} color="var(--paper)">
-          <span className="font-score text-[11px] uppercase tracking-[0.35em]" style={{ color: INK }}>
-            no manual required
-          </span>
-        </TapedLabel>
-
-        <h1
-          className="font-display mt-3 text-4xl uppercase tracking-wide md:text-5xl"
-          style={{ color: "var(--cream)" }}
-        >
-          Turn Any Screen Into a Party Game
-        </h1>
-        <p className="font-hand mt-4 max-w-xl text-xl leading-snug" style={{ color: "var(--muted-foreground)" }}>
-          One screen on the wall. Everyone&apos;s phone in their hand. No app, no console, no accounts for players.
-        </p>
-
-        {/* Step by step */}
-        <section aria-labelledby="steps-heading" className="mt-14">
-          <h2
-            id="steps-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Getting Started
-          </h2>
-          <ol className="flex flex-col gap-6">
-            {[
-              {
-                n: "1",
-                title: "Create a free host account",
-                body: "Sign up at ScreenParty. No credit card required. The free plan gives you everything you need to run a game night.",
-                cta: { label: "Sign up free", href: "/signup" },
-              },
-              {
-                n: "2",
-                title: "Choose a game and create a room",
-                body: `Pick from ${AVAILABLE_GAMES.length} party games. Set the number of questions or rounds, choose Virtual Host or manual mode, and create your room. A four-letter room code is generated.`,
-                cta: { label: "Browse games", href: "/games" },
-              },
-              {
-                n: "3",
-                title: "Put the big screen on the room URL",
-                body: "Open the room on your TV, laptop, monitor, or projector. The four-letter room code goes up on screen in lights. This is the display everyone in the room watches.",
-              },
-              {
-                n: "4",
-                title: "Players join from their phones",
-                body: "Everyone goes to screenparty.gg/join, types the room code, picks a mascot, and they appear in the lobby. No accounts, no downloads. An iPhone, Android phone, or any device with a browser works.",
-                cta: { label: "See join page", href: "/join" },
-              },
-              {
-                n: "5",
-                title: "Start the game",
-                body: "Hit start from your host screen. In manual mode, you advance each round yourself. With the Virtual Host on, it reads every question, calls results, and keeps pace automatically while you play on your phone.",
-              },
-            ].map(({ n, title, body, cta }) => (
-              <li
-                key={n}
-                className="panel-paper panel-grain flex gap-5 p-6"
-                style={{ background: "var(--cream)" }}
+      {/* the sequence matters here, so the numbers stay */}
+      <section aria-labelledby="steps-heading" className="mx-auto w-full max-w-3xl px-6 pb-16 md:pb-24">
+        <SectionHeading id="steps-heading" sub="From “what should we play?” to the first question in about two minutes.">
+          Getting started
+        </SectionHeading>
+        <RevealList as="ol" className="relative flex flex-col gap-5">
+          {steps.map((step, i) => (
+            <RevealItem as="li" key={step.title} className="panel-paper panel-grain flex gap-5 p-5 md:p-6">
+              <span
+                aria-hidden
+                className="font-display flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 pt-1 text-2xl"
+                style={{ borderColor: "var(--ink)", background: i === 0 ? "var(--mustard)" : "var(--paper)", color: "var(--ink)" }}
               >
-                <span
-                  className="font-display flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[3px] pt-0.5 text-lg"
-                  style={{ borderColor: INK, background: "var(--mustard)", color: INK }}
-                  aria-hidden
-                >
-                  {n}
-                </span>
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-display text-xl leading-tight" style={{ color: INK }}>
-                    {title}
-                  </h3>
-                  <p className="font-hand text-lg leading-snug" style={{ color: "#4a4460" }}>
-                    {body}
-                  </p>
-                  {cta && (
-                    <Link
-                      href={cta.href}
-                      className="font-score self-start text-[10px] uppercase tracking-[0.25em] underline"
-                      style={{ color: INK }}
-                    >
-                      {cta.label} →
-                    </Link>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+                {i + 1}
+              </span>
+              <div className="flex flex-col gap-1.5">
+                <h3 className="font-display text-xl leading-tight" style={{ color: "var(--ink)" }}>
+                  {step.title}
+                </h3>
+                <p className="font-hand max-w-[56ch] text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+                  {step.body}
+                </p>
+                {step.link && (
+                  <span className="-mb-2">
+                    <TextLink href={step.link.href} onPaper>
+                      {step.link.label} →
+                    </TextLink>
+                  </span>
+                )}
+              </div>
+            </RevealItem>
+          ))}
+        </RevealList>
+      </section>
 
-        {/* Host vs Virtual Host */}
-        <section aria-labelledby="modes-heading" className="mt-14">
-          <h2
-            id="modes-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Manual Mode vs Virtual Host
-          </h2>
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="panel-paper panel-grain flex flex-col gap-3 p-6" style={{ background: "var(--cream)" }}>
-              <h3 className="font-display text-xl" style={{ color: INK }}>Manual Mode</h3>
-              <ul className="font-hand flex flex-col gap-2 text-lg" style={{ color: "#4a4460" }}>
-                <li>· You advance each round by pressing a button</li>
-                <li>· Questions appear on screen in silence</li>
-                <li>· You can add your own commentary</li>
-                <li>· Good when you want full control of the pace</li>
-                <li>· Available on all plans</li>
-              </ul>
-            </div>
-            <div className="panel-paper panel-grain flex flex-col gap-3 p-6" style={{ background: "var(--cream)" }}>
-              <h3 className="font-display text-xl" style={{ color: INK }}>Virtual Host</h3>
-              <ul className="font-hand flex flex-col gap-2 text-lg" style={{ color: "#4a4460" }}>
-                <li>· Reads every question and prompt out loud</li>
-                <li>· Reacts to buzzes, correct answers, and results</li>
-                <li>· Advances rounds automatically</li>
-                <li>· You can play on your phone like everyone else</li>
-                <li>· Free during beta ({LIMITS.free.aiHostGamesPerMonth} games/month on Free)</li>
-              </ul>
-              <Link
-                href="/virtual-host"
-                className="font-score self-start text-[10px] uppercase tracking-[0.25em] underline"
-                style={{ color: INK }}
-              >
-                Learn more →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Device notes */}
-        <section aria-labelledby="devices-heading" className="mt-14">
-          <h2
-            id="devices-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Devices and Browsers
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              {
-                label: "Main screen (host display)",
-                items: ["Any laptop or desktop browser", "Smart TV browser", "iPad on a stand", "Laptop connected to a TV", "Projector connected to any computer"],
-              },
-              {
-                label: "Players' phones",
-                items: ["iPhone, Safari or Chrome", "Android, Chrome or Firefox", "iPad or Android tablet", "Any device with a modern browser", "No app installation needed"],
-              },
-            ].map(({ label, items }) => (
+      {/* curtain band: who runs the show */}
+      <section aria-labelledby="modes-heading" className="band-curtain px-6 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl">
+          <SectionHeading id="modes-heading" sub="Every game works both ways.">
+            Who runs the show?
+          </SectionHeading>
+          <div className="panel panel-grain grid md:grid-cols-2">
+            {modes.map((mode) => (
               <div
-                key={label}
-                className="panel-paper panel-grain p-5"
-                style={{ background: "var(--cream)" }}
+                key={mode.name}
+                className="flex flex-col gap-4 border-dashed p-6 md:p-8 max-md:[&:not(:first-child)]:border-t-[3px] md:[&:not(:first-child)]:border-l-[3px]"
               >
-                <h3 className="font-display mb-3 text-lg" style={{ color: INK }}>{label}</h3>
-                <ul className="font-hand flex flex-col gap-1.5 text-lg" style={{ color: "#4a4460" }}>
-                  {items.map((item) => (
-                    <li key={item}>· {item}</li>
+                <div>
+                  <h3 className="font-display text-2xl" style={{ color: "var(--ink)" }}>
+                    {mode.name}
+                  </h3>
+                  <p className="font-score mt-1 text-xs uppercase tracking-[0.16em]" style={{ color: "var(--ink-label)" }}>
+                    {mode.plan}
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {mode.points.map((pt) => (
+                    <li key={pt} className="font-hand flex items-start gap-2.5 text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+                      <svg aria-hidden viewBox="0 0 16 16" className="mt-1.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2.5 8.5l3.5 3.5 7.5-8" />
+                      </svg>
+                      {pt}
+                    </li>
                   ))}
                 </ul>
+                {mode.link && (
+                  <span className="mt-auto">
+                    <TextLink href={mode.link.href} onPaper>
+                      {mode.link.label} →
+                    </TextLink>
+                  </span>
+                )}
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Remote play */}
-        <section aria-labelledby="remote-heading" className="mt-14">
-          <h2
-            id="remote-heading"
-            className="font-display mb-4 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Playing Remotely
-          </h2>
-          <div className="panel-paper panel-grain p-6" style={{ background: "var(--cream)" }}>
-            <div className="flex items-start gap-4">
-              <Mascot avatarId="detective" size={56} animate={false} />
-              <div>
-                <p className="font-hand text-xl leading-snug" style={{ color: "#4a4460" }}>
-                  ScreenParty works over video call. Share the main game screen as a window in your video call (Zoom, Meet, FaceTime, Discord). Everyone joins the game from their phone. The Virtual Host keeps the game running while you focus on the call.
-                </p>
-                <p className="font-hand mt-3 text-xl leading-snug" style={{ color: "#4a4460" }}>
-                  Tip: for Fact Frenzy and Virtual Host sessions, mute yourself in the video call so the game audio comes through clearly to everyone sharing screen audio.
-                </p>
-              </div>
+      <section aria-labelledby="devices-heading" className="mx-auto w-full max-w-5xl px-6 py-16 md:py-24">
+        <SectionHeading id="devices-heading">Works on what you already have</SectionHeading>
+        <div className="grid gap-10 md:grid-cols-3">
+          {devices.map((d) => (
+            <div key={d.label} className="flex flex-col gap-3 border-t-4 border-dashed pt-4" style={{ borderColor: "rgba(245,236,212,0.3)" }}>
+              <h3 className="font-display text-xl" style={{ color: "var(--cream)" }}>
+                {d.label}
+              </h3>
+              <ul className="font-hand flex flex-col gap-1.5 text-lg" style={{ color: "var(--cream-muted)" }}>
+                {d.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="faq-heading" className="mt-14">
-          <h2
-            id="faq-heading"
-            className="font-display mb-6 text-2xl uppercase tracking-wide"
-            style={{ color: "var(--cream)" }}
-          >
-            Common Questions
-          </h2>
-          <PublicFAQ items={HOW_FAQS} />
-        </section>
-
-        {/* CTA */}
-        <div className="mb-20 mt-12 text-center">
-          <DoodleStar size={30} className="mx-auto mb-4" />
-          <div className="inline-flex flex-col items-center gap-4">
-            <p className="font-display text-2xl uppercase tracking-wide" style={{ color: "var(--cream)" }}>
-              Ready to run your first game?
+          ))}
+          <div className="flex flex-col gap-3 border-t-4 border-dashed pt-4" style={{ borderColor: "rgba(245,236,212,0.3)" }}>
+            <h3 className="font-display text-xl" style={{ color: "var(--cream)" }}>
+              Playing remotely
+            </h3>
+            <p className="font-hand text-lg leading-snug" style={{ color: "var(--cream-muted)" }}>
+              Share the big screen on Zoom, Meet, FaceTime or Discord. Everyone joins from their own phone, wherever they are.
             </p>
-            <div className="flex gap-3">
-              <Link
-                href="/signup"
-                className="btn-rough px-8 py-3 text-xl"
-                style={{ background: "var(--mustard)", color: INK }}
-              >
-                Host Free
-              </Link>
-              <Link
-                href="/games"
-                className="font-score rounded-md border-2 border-current px-6 py-3 text-xs uppercase tracking-[0.2em]"
-                style={{ color: "var(--cream)" }}
-              >
-                Browse Games
-              </Link>
-            </div>
+            <p className="font-hand text-lg leading-snug" style={{ color: "var(--cream-muted)" }}>
+              <span style={{ color: "var(--cream)" }}>Tip:</span> mute yourself on the call during Fact Frenzy and Virtual Host games so the game audio comes through clearly.
+            </p>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section aria-labelledby="faq-heading" className="mx-auto w-full max-w-3xl px-6 pb-16 md:pb-24">
+        <SectionHeading id="faq-heading">Common questions</SectionHeading>
+        <PublicFAQ items={HOW_FAQS} />
+      </section>
+
+      <ClosingCta
+        title="Ready to run your first game?"
+        body="Set up a room in under a minute. Your friends just need their phones."
+        cta={{ href: "/signup", label: "Host a free game" }}
+        link={{ href: "/games", label: "Browse games" }}
+      />
     </div>
   );
 }

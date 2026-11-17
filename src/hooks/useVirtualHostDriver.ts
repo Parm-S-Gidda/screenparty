@@ -28,7 +28,11 @@ type Cue = {
   pauseMs?: number; // extra beat before the follow-up action (e.g. scoreboard)
 };
 
-function deriveCue(state: RoomStateResponse): Cue | null {
+function deriveCue(
+  state: RoomStateResponse,
+  wasInterrupted = false,
+  announcedRunaway = false
+): Cue | null {
   const session = state.session;
   if (!session) return null;
   const payload = session.payload;
@@ -61,6 +65,14 @@ function deriveCue(state: RoomStateResponse): Cue | null {
     case "PLAYER_BUZZED": {
       const buzz = payload.buzz;
       if (!buzz) return null;
+      // If the host was mid-sentence, acknowledge the interruption
+      if (wasInterrupted) {
+        return {
+          key: `buzz:${q}:${buzz.playerId}:${buzz.attempt}`,
+          moments: ["buzz_interrupted"],
+          action: { type: "OPEN_ANSWER" },
+        };
+      }
       // direct steal: call out the miss before handing the floor over (a fresh
       // buzz after a reopened window already had its answer_wrong moment)
       const directSteal =
@@ -71,7 +83,6 @@ function deriveCue(state: RoomStateResponse): Cue | null {
       const moments: HostMoment[] = directSteal
         ? ["answer_wrong", "retry_next_player"]
         : [buzz.attempt > 1 ? "retry_next_player" : "buzz_received"];
-      // typing stays locked until the host finishes talking
       return {
         key: `buzz:${q}:${buzz.playerId}:${buzz.attempt}`,
         moments,
@@ -85,9 +96,9 @@ function deriveCue(state: RoomStateResponse): Cue | null {
       } else if (payload.skipped) {
         moments.push("no_buzz_timeout");
       }
-      // a correct answer already names the answer, only read the reveal when
-      // it was wrong or nobody got it
       if (!payload.lastResult?.correct) moments.push("show_answer");
+      // ~33% chance of a lore riff on the revealed answer (trivia only)
+      if (Math.random() < 0.33) moments.push("answer_lore");
       return {
         key: `answer:${q}`,
         moments,
@@ -95,13 +106,36 @@ function deriveCue(state: RoomStateResponse): Cue | null {
         pauseMs: 2500,
       };
     }
-    case "SCOREBOARD":
+    case "SCOREBOARD": {
+      const moments: HostMoment[] = ["scoreboard_reveal"];
+      const scores = state.scores ?? [];
+      const lr = payload.lastResult;
+      // Detect rank change from the last answer
+      if (lr && scores.length >= 2) {
+        const delta = lr.correct ? lr.points : -lr.points;
+        const sortedCurrent = [...scores].sort((a, b) => b.score - a.score);
+        const sortedPrev = scores
+          .map((s) => ({ ...s, score: s.playerId === lr.playerId ? s.score - delta : s.score }))
+          .sort((a, b) => b.score - a.score);
+        const curRank = sortedCurrent.findIndex((s) => s.playerId === lr.playerId);
+        const prevRank = sortedPrev.findIndex((s) => s.playerId === lr.playerId);
+        if (curRank < prevRank) moments.push("rank_rose");
+        else if (curRank > prevRank) moments.push("rank_fell");
+      }
+      // Announce insurmountable lead once per game
+      if (!announcedRunaway && scores.length >= 2) {
+        const sorted = [...scores].sort((a, b) => b.score - a.score);
+        const gap = sorted[0].score - sorted[1].score;
+        const remaining = session.questionCount - session.questionIndex - 1;
+        if (remaining > 0 && gap > remaining * 100) moments.push("runaway_lead");
+      }
       return {
         key: `scoreboard:${q}`,
-        moments: ["scoreboard_reveal"],
+        moments,
         action: { type: "NEXT_QUESTION" },
         pauseMs: 4000,
       };
+    }
     case "GAME_OVER": {
       const winners = payload.podium?.find((e) => e.place === 1);
       return {
@@ -130,7 +164,7 @@ function deriveWyrCue(state: RoomStateResponse): Cue | null {
         key: `wyr-reveal:${session.questionIndex}`,
         moments: ["wyr_reveal"],
         action: { type: "SHOW_SCOREBOARD" },
-        pauseMs: 4500,
+        pauseMs: 1500,
       };
     case "SCOREBOARD":
       return {
@@ -171,9 +205,9 @@ function deriveTtalCue(state: RoomStateResponse): Cue | null {
     case "VOTING": {
       const round = payload.ttalRound;
       if (!round) return null;
-      // introduce the subject, then read their statements out loud in the
-      // on-screen order so everyone can vote without squinting at the board.
-      // Key includes the turn index: subjects repeat across rounds.
+      // Introduce the subject, then read their statements. After reading the
+      // driver fires REVEAL_ROUND — the server won't auto-reveal in virtual
+      // mode, so this guarantees nobody's screen jumps to results mid-read.
       return {
         key: `ttal-subject:${session.questionIndex}:${round.subjectId}`,
         moments: [
@@ -183,6 +217,8 @@ function deriveTtalCue(state: RoomStateResponse): Cue | null {
             statementId: s.id,
           })),
         ],
+        action: { type: "REVEAL_ROUND" as const },
+        pauseMs: 2000, // brief beat for last-minute votes after reading finishes
       };
     }
     case "REVEAL":
@@ -229,8 +265,8 @@ function deriveMltCue(state: RoomStateResponse): Cue | null {
       return {
         key: `mlt-reveal:${session.questionIndex}`,
         moments: ["mlt_reveal"],
-        action: { type: "SHOW_SCOREBOARD" },
-        pauseMs: 4000,
+        action: { type: "NEXT_ROUND" },
+        pauseMs: 2000,
       };
     case "SCOREBOARD":
       return {
@@ -260,8 +296,15 @@ function deriveHolCue(state: RoomStateResponse): Cue | null {
       return {
         key: `hol-reveal:${session.questionIndex}`,
         moments: ["hol_reveal"],
+        action: { type: "SHOW_SCOREBOARD" },
+        pauseMs: 1800,
+      };
+    case "SCOREBOARD":
+      return {
+        key: `hol-scoreboard:${session.questionIndex}`,
+        moments: ["scoreboard_reveal"],
         action: { type: "NEXT_ROUND" },
-        pauseMs: 3500,
+        pauseMs: 4000,
       };
     case "GAME_OVER": {
       const winners = payload.podium?.find((e) => e.place === 1);
@@ -328,7 +371,7 @@ function deriveTankCue(state: RoomStateResponse): Cue | null {
         key: `tank-reveal:${session.questionIndex}`,
         moments: ["tank_reveal"],
         action: { type: "SHOW_SCOREBOARD" },
-        pauseMs: 3500,
+        pauseMs: 1800,
       };
     case "SCOREBOARD":
       return {
@@ -358,8 +401,15 @@ function deriveCharadesCue(state: RoomStateResponse): Cue | null {
       return {
         key: `charades-reveal:${session.questionIndex}`,
         moments: ["charades_reveal"],
+        action: { type: "SHOW_SCOREBOARD" },
+        pauseMs: 1800,
+      };
+    case "SCOREBOARD":
+      return {
+        key: `charades-scoreboard:${session.questionIndex}`,
+        moments: ["scoreboard_reveal"],
         action: { type: "NEXT_ROUND" },
-        pauseMs: 3500,
+        pauseMs: 4000,
       };
     case "GAME_OVER": {
       const winners = payload.podium?.find((e) => e.place === 1);
@@ -387,8 +437,9 @@ function deriveNumCue(state: RoomStateResponse): Cue | null {
       return {
         key: `num-reveal:${session.questionIndex}`,
         moments: ["num_reveal"],
-        action: { type: "SHOW_SCOREBOARD" },
-        pauseMs: 4000,
+        // num's REVEAL -> SCOREBOARD step is NEXT_ROUND (it has no SHOW_SCOREBOARD)
+        action: { type: "NEXT_ROUND" },
+        pauseMs: 2000,
       };
     case "SCOREBOARD":
       return {
@@ -407,10 +458,16 @@ function deriveNumCue(state: RoomStateResponse): Cue | null {
 
 export function useVirtualHostDriver(code: string, state: RoomStateResponse | null, enabled: boolean) {
   const [caption, setCaption] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [stallBreaker, setStallBreaker] = useState(0);
   const runningRef = useRef(false);
   const doneKeys = useRef(new Set<string>());
   const skipRef = useRef<(() => void) | null>(null);
   const answerTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // set when a player buzzes while the host is mid-sentence; consumed once
+  const interruptedRef = useRef(false);
+  // set after first runaway-lead announcement so it doesn't repeat each scoreboard
+  const announcedRunawayRef = useRef(false);
 
   const playClip = useCallback((audioUrl: string | null, text: string) => {
     return new Promise<void>((resolve) => {
@@ -447,10 +504,15 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
 
   useEffect(() => {
     if (!enabled || !state) return;
-    const cue = deriveCue(state);
+    const cue = deriveCue(state, interruptedRef.current, announcedRunawayRef.current);
     if (!cue || runningRef.current || doneKeys.current.has(cue.key)) return;
+    // Consume the interrupted flag after it has shaped the cue
+    if (interruptedRef.current) interruptedRef.current = false;
+    // Track that we've announced the runaway so it doesn't repeat
+    if (cue.moments.includes("runaway_lead")) announcedRunawayRef.current = true;
     doneKeys.current.add(cue.key);
     runningRef.current = true;
+    setSpeaking(true);
 
     void (async () => {
       try {
@@ -479,10 +541,26 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
         }
       } finally {
         setCaption(null);
+        setSpeaking(false);
         runningRef.current = false;
+        // Trigger a re-check in case state changed while this cue was running
+        // (e.g. a buzz came in mid-read and is waiting to be processed).
+        setStallBreaker((s) => s + 1);
       }
     })();
-  }, [enabled, state, code, playClip]);
+  }, [enabled, state, code, playClip, stallBreaker]);
+
+  // When a player buzzes while the host is still talking, stop the audio and
+  // flag the interruption so the next cue fires buzz_interrupted instead.
+  // Steals (attempt > 1) are NOT interruptions: the host is announcing a wrong
+  // answer, and the queued player just became active — don't cut that off.
+  useEffect(() => {
+    if (!enabled || state?.session?.state !== "PLAYER_BUZZED") return;
+    if (!runningRef.current) return;
+    if ((state.session?.payload.buzz?.attempt ?? 1) > 1) return;
+    interruptedRef.current = true;
+    skipRef.current?.();
+  }, [enabled, state?.session?.state]);
 
   // Safety nets so an idle player can't stall the game: a buzzed player who
   // never answers gets skipped; a TTAL vote that never completes gets
@@ -500,6 +578,11 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
       answerTimeout.current = setTimeout(() => {
         void sendAction(code, { type: "SKIP_QUESTION" }).catch(() => {});
       }, waitMs);
+    } else if (session.gameType === "ttal" && session.state === "COLLECTING") {
+      const collectMs = (session.settings.collectingSeconds ?? 90) * 1000;
+      answerTimeout.current = setTimeout(() => {
+        void sendAction(code, { type: "FORCE_COLLECT_DONE" }).catch(() => {});
+      }, collectMs);
     } else if (
       session.gameType === "ttal" &&
       session.state === "VOTING" &&
@@ -508,22 +591,19 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
       answerTimeout.current = setTimeout(() => {
         void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
       }, waitMs);
-    } else if (
-      session.gameType === "wyr" &&
-      session.state === "WYR_CHOOSING" &&
-      (state.wyr?.submittedPlayerIds.length ?? 0) > 0
-    ) {
+    } else if (session.gameType === "wyr" && session.state === "WYR_CHOOSING") {
       answerTimeout.current = setTimeout(() => {
         void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
       }, waitMs);
-    } else if (
-      session.gameType === "mlt" &&
-      session.state === "MLT_VOTING" &&
-      (state.mlt?.submittedVoterIds.length ?? 0) > 0
-    ) {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, 60_000);
+    } else if (session.gameType === "mlt" && session.state === "MLT_VOTING") {
+      const openedAt = session.payload.mltRound?.openedAt;
+      if (openedAt) {
+        const elapsed = Date.now() - new Date(openedAt).getTime();
+        const remaining = Math.max(session.settings.autoSkipSeconds * 1000 - elapsed, 500);
+        answerTimeout.current = setTimeout(() => {
+          void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
+        }, remaining);
+      }
     } else if (
       session.gameType === "hol" &&
       session.state === "HOL_VOTING" &&
@@ -549,6 +629,20 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
         void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
       }, 45_000);
     } else if (
+      session.gameType === "num" &&
+      ((session.state === "NUM_SUBMITTING" && (state.num?.submittedExampleIds.length ?? 0) > 0) ||
+        session.state === "NUM_GUESSING")
+    ) {
+      // an idle writer or guesser can't stall the AI host: move on with what's in.
+      // Timed from the phase's openedAt so state refetches don't restart the clock.
+      const submitting = session.state === "NUM_SUBMITTING";
+      const openedAt = submitting ? session.payload.numRound?.openedAt : session.payload.numGuessing?.openedAt;
+      const limitMs = submitting ? 90_000 : 75_000;
+      const elapsed = openedAt ? Date.now() - new Date(openedAt).getTime() : 0;
+      answerTimeout.current = setTimeout(() => {
+        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
+      }, Math.max(limitMs - elapsed, 500));
+    } else if (
       session.gameType === "charades" &&
       session.state === "CHARADES_ACTING"
     ) {
@@ -565,5 +659,5 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
 
   const skip = useCallback(() => skipRef.current?.(), []);
 
-  return { caption, skip };
+  return { caption, skip, speaking };
 }

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 // AI host captions as a comic speech bubble at the bottom of the main screen
 // (PRD §18), tap to skip the voice line. The host stays an off-screen voice.
-export function CaptionBar({ caption, onSkip }: { caption: string | null; onSkip: () => void }) {
+export function CaptionBar({ caption, onSkip, label = "the host" }: { caption: string | null; onSkip: () => void; label?: string }) {
   return (
     <AnimatePresence>
       {caption && (
@@ -22,10 +22,10 @@ export function CaptionBar({ caption, onSkip }: { caption: string | null; onSkip
                 {caption}
               </span>
               <span
-                className="font-score mt-1 block text-[10px] uppercase tracking-[0.25em]"
+                className="font-score mt-1 block text-xs uppercase tracking-[0.2em]"
                 style={{ color: "rgba(34,31,48,0.5)" }}
               >
-                the host · tap to skip
+                {label} · tap to skip
               </span>
             </span>
             {/* tail */}

@@ -1,161 +1,119 @@
 import Link from "next/link";
 import { LIMITS, AI_HOST_FREE_BETA } from "@/lib/constants";
+import { AVAILABLE_GAMES } from "@/lib/games";
+import { RevealItem, RevealList } from "@/components/public/Reveal";
 
-const INK = "#221f30";
-
-type PricingCTA = {
-  label: string;
-  href: string;
-  primary?: boolean;
-};
-
-type PricingSectionProps = {
-  showHeading?: boolean;
-};
+const GAME_COUNT = AVAILABLE_GAMES.length;
 
 const PLANS = [
   {
     name: "Free",
     price: "$0",
     cadence: "forever",
-    color: "var(--cream)",
     features: [
       `Up to ${LIMITS.free.maxPlayers} players per room`,
-      "All 9 games included",
-      `${LIMITS.free.roomTtlHours}-hour room sessions`,
-      `${LIMITS.free.aiHostGamesPerMonth} Virtual Host games per month${AI_HOST_FREE_BETA ? " (free during beta)" : ""}`,
-      `${LIMITS.free.maxQuestions} questions per game max`,
+      `All ${GAME_COUNT} games`,
+      `${LIMITS.free.roomTtlHours}-hour rooms`,
+      `${LIMITS.free.aiHostGamesPerMonth} Virtual Host games a month${AI_HOST_FREE_BETA ? " (beta)" : ""}`,
+      `Up to ${LIMITS.free.maxQuestions} questions per game`,
     ],
-    cta: { label: "Host Free", href: "/signup" } as PricingCTA,
-    highlight: false,
+    cta: { label: "Host free", href: "/signup" },
   },
   {
     name: "Party Pass",
     price: "$5.99",
-    cadence: "one-time · 24 hours",
-    color: "var(--cream)",
+    cadence: "once · 24 hours",
     features: [
       `Up to ${LIMITS.party_plus.maxPlayers} players per room`,
-      "All 9 games included",
-      `${LIMITS.party_plus.roomTtlHours}-hour room sessions`,
-      `${LIMITS.party_plus.aiHostGamesPerMonth} Virtual Host games per month`,
-      `${LIMITS.party_plus.maxQuestions} questions per game max`,
-      "24 hours from purchase (stackable)",
-      "No subscription required",
+      `All ${GAME_COUNT} games`,
+      `${LIMITS.party_plus.roomTtlHours}-hour rooms`,
+      "Virtual Host at Party+ limits",
+      `Up to ${LIMITS.party_plus.maxQuestions} questions per game`,
+      "Buy again to add 24 more hours",
+      "No subscription",
     ],
-    cta: { label: "Get a Party Pass", href: "/signup" } as PricingCTA,
-    highlight: false,
+    cta: { label: "Get a Party Pass", href: "/signup" },
+    featured: "Best for one night",
   },
   {
     name: "Party+",
     price: "$10",
     cadence: "per month",
-    color: "var(--cream)",
     features: [
       `Up to ${LIMITS.party_plus.maxPlayers} players per room`,
-      "All 9 games included",
-      `${LIMITS.party_plus.roomTtlHours}-hour room sessions`,
-      `${LIMITS.party_plus.aiHostGamesPerMonth} Virtual Host games per month`,
-      `${LIMITS.party_plus.maxQuestions} questions per game max`,
+      `All ${GAME_COUNT} games`,
+      `${LIMITS.party_plus.roomTtlHours}-hour rooms`,
+      `${LIMITS.party_plus.aiHostGamesPerMonth} Virtual Host games a month`,
+      `Up to ${LIMITS.party_plus.maxQuestions} questions per game`,
       "Cancel any time",
     ],
-    cta: { label: "Start Party+", href: "/signup", primary: true } as PricingCTA,
-    highlight: true,
+    cta: { label: "Start Party+", href: "/signup" },
   },
   {
     name: "Pro Host",
     price: "$30",
     cadence: "per month",
-    color: "var(--cream)",
     features: [
       `Up to ${LIMITS.pro_host.maxPlayers} players per room`,
-      "All 9 games included",
-      `${LIMITS.pro_host.roomTtlHours}-hour room sessions`,
-      `${LIMITS.pro_host.aiHostGamesPerMonth} Virtual Host games per month`,
-      `${LIMITS.pro_host.maxQuestions} questions per game max`,
-      "Up to 100 rooms per day",
+      `All ${GAME_COUNT} games`,
+      `${LIMITS.pro_host.roomTtlHours}-hour rooms`,
+      `${LIMITS.pro_host.aiHostGamesPerMonth} Virtual Host games a month`,
+      `Up to ${LIMITS.pro_host.maxQuestions} questions per game`,
+      `Up to ${LIMITS.pro_host.maxRoomsPerDay} rooms a day`,
       "Cancel any time",
     ],
-    cta: { label: "Choose Pro Host", href: "/signup" } as PricingCTA,
-    highlight: false,
+    cta: { label: "Choose Pro Host", href: "/signup" },
   },
 ] as const;
 
-export function PricingSection({ showHeading = false }: PricingSectionProps) {
+export function PricingSection() {
   return (
-    <div>
-      {showHeading && (
-        <div className="mb-8 text-center">
-          <h2 className="font-display text-3xl uppercase tracking-wide md:text-4xl" style={{ color: "var(--cream)" }}>
-            Simple, honest pricing
-          </h2>
-          <p className="font-hand mt-3 text-xl" style={{ color: "var(--muted-foreground)" }}>
-            Start free. Upgrade for bigger groups and more Virtual Host time.
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {PLANS.map((plan) => (
-          <div
+    <RevealList className="grid gap-6 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+      {PLANS.map((plan) => {
+        const featured = "featured" in plan;
+        return (
+          <RevealItem
             key={plan.name}
-            className="panel-paper panel-grain relative flex flex-col gap-3 p-5"
-            style={{
-              background: "var(--cream)",
-              outline: plan.highlight ? `3px solid var(--mustard)` : undefined,
-              outlineOffset: plan.highlight ? "2px" : undefined,
-            }}
+            className={`panel-paper panel-grain relative flex flex-col gap-4 p-6 ${featured ? "lg:-translate-y-3" : ""}`}
           >
-            {plan.highlight && (
-              <span
-                className="font-score absolute -top-3 left-1/2 -translate-x-1/2 rounded-md border-2 border-[#221f30] px-3 py-0.5 text-[9px] uppercase tracking-widest"
-                style={{ background: "var(--mustard)", color: INK }}
-              >
-                Most popular
+            {featured && (
+              <span className="chip absolute -top-3.5 left-5" style={{ background: "var(--mustard)", color: "var(--ink)", border: "2px solid var(--ink)" }}>
+                {plan.featured}
               </span>
             )}
-            <h3 className="font-display text-xl" style={{ color: INK }}>
-              {plan.name}
-            </h3>
-            <p>
-              <span className="font-score text-3xl font-bold" style={{ color: INK }}>
-                {plan.price}
-              </span>{" "}
-              <span className="font-hand text-base" style={{ color: "#8a7f63" }}>
-                {plan.cadence}
-              </span>
-            </p>
-            <ul className="flex flex-1 flex-col gap-1.5">
+            <div>
+              <h3 className="font-display text-xl" style={{ color: "var(--ink)" }}>
+                {plan.name}
+              </h3>
+              <p className="mt-1 flex items-baseline gap-2">
+                <span className="font-score text-4xl tabular-nums" style={{ color: "var(--ink)" }}>
+                  {plan.price}
+                </span>
+                <span className="font-hand text-lg" style={{ color: "var(--ink-label)" }}>
+                  {plan.cadence}
+                </span>
+              </p>
+            </div>
+            <ul className="flex flex-1 flex-col gap-2 border-t-2 border-dashed pt-4" style={{ borderColor: "rgba(34,31,48,0.25)" }}>
               {plan.features.map((f) => (
-                <li key={f} className="font-hand flex items-start gap-2 text-lg leading-snug" style={{ color: "#4a4460" }}>
-                  <span aria-hidden className="mt-1 shrink-0 text-sm" style={{ color: "var(--teal)" }}>
-                    ✓
-                  </span>
+                <li key={f} className="font-hand flex items-start gap-2.5 text-lg leading-snug" style={{ color: "var(--ink-body)" }}>
+                  <svg aria-hidden viewBox="0 0 16 16" className="mt-1.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="var(--ink)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2.5 8.5l3.5 3.5 7.5-8" />
+                  </svg>
                   {f}
                 </li>
               ))}
             </ul>
             <Link
               href={plan.cta.href}
-              className={`btn-rough mt-2 px-4 py-2.5 text-center text-sm ${plan.highlight ? "font-display" : "font-score"} uppercase tracking-wide`}
-              style={
-                plan.highlight
-                  ? { background: "var(--mustard)", color: INK }
-                  : { background: INK, color: "var(--cream)" }
-              }
+              className="btn-rough mt-1 px-4 py-2.5 text-center text-lg"
+              style={featured ? undefined : { background: "var(--ink)", color: "var(--cream)" }}
             >
               {plan.cta.label}
             </Link>
-          </div>
-        ))}
-      </div>
-
-      <p
-        className="font-hand mt-6 text-center text-lg"
-        style={{ color: "var(--muted-foreground)" }}
-      >
-        Party Pass and Party+ give you the same player limits. Party Pass is a single 24-hour window, no subscription.
-      </p>
-    </div>
+          </RevealItem>
+        );
+      })}
+    </RevealList>
   );
 }

@@ -35,6 +35,7 @@ const ACTION_TYPES = [
   // two truths and a lie
   "SUBMIT_STATEMENTS",
   "CAST_VOTE",
+  "FORCE_COLLECT_DONE",
   "REVEAL_ROUND",
   "NEXT_ROUND",
   // majority would you rather
@@ -73,7 +74,7 @@ export async function POST(
 
     const playerToken = request.headers.get("x-player-token") ?? undefined;
     const limitKey = `action:${playerToken ?? request.headers.get("x-forwarded-for") ?? "local"}`;
-    if (!rateLimit(limitKey, 30, 10_000)) throw new GameError(429, "Slow down");
+    if (!await rateLimit(limitKey, 30, 10_000)) throw new GameError(429, "Slow down");
 
     const admin = createAdminClient();
     const room = await getRoomByCode(admin, code);

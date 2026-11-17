@@ -225,6 +225,10 @@ async function handleSubmitGuesses(
 
 async function handleForceReveal(ctx: Ctx) {
   assertHost(ctx);
+  if (ctx.session.current_state === "NUM_SUBMITTING") {
+    await startGuessingPhase(ctx);
+    return;
+  }
   assertState(ctx.session, ["NUM_GUESSING"]);
   await revealRound(ctx);
 }

@@ -39,6 +39,21 @@ export async function middleware(request: NextRequest) {
   }
 
   const path = request.nextUrl.pathname;
+
+  // Block signup entirely
+  if (path.startsWith("/signup")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Block any authenticated user who isn't the allowed email
+  const allowedEmail = process.env.ALLOWED_EMAIL;
+  if (user && allowedEmail && user.email !== allowedEmail) {
+    await supabase.auth.signOut();
+    const url = new URL("/login", request.url);
+    url.searchParams.set("error", "not_authorized");
+    return NextResponse.redirect(url);
+  }
+
   const needsAuth = path.startsWith("/dashboard") || path.startsWith("/host");
   if (needsAuth && !user) {
     const url = request.nextUrl.clone();

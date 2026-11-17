@@ -128,10 +128,10 @@ async function handleSubmit(ctx: Ctx, choice: "a" | "b", prediction: "a" | "b") 
 async function handleForceReveal(ctx: Ctx) {
   assertHost(ctx);
   assertState(ctx.session, ["WYR_CHOOSING"]);
-  await revealRound(ctx);
+  await revealRound(ctx, true);
 }
 
-async function revealRound(ctx: Ctx) {
+async function revealRound(ctx: Ctx, force = false) {
   const round = ctx.session.public_payload.wyrRound;
   if (!round) throw new GameError(500, "No active round");
 
@@ -197,6 +197,7 @@ async function revealRound(ctx: Ctx) {
       correctPredictorIds,
       predictorPoints: WYR_POINTS.correctPrediction,
       teamMajorities,
+      timedOut: force && rows.length === 0,
     },
   };
   const { error } = await ctx.admin

@@ -28,12 +28,12 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="font-score flex flex-wrap items-center gap-1 text-[11px] uppercase tracking-[0.2em]" style={{ color: "var(--muted-foreground)" }}>
+        <ol className="font-score flex flex-wrap items-center gap-1 text-xs uppercase tracking-[0.2em]" style={{ color: "var(--muted-foreground)" }}>
           {items.map((item, index) => (
             <li key={item.href} className="flex items-center gap-1">
               {index < items.length - 1 ? (
                 <>
-                  <Link href={item.href} className="opacity-60 transition hover:opacity-100" style={{ color: "var(--cream)" }}>
+                  <Link href={item.href} className="transition-colors hover:text-[var(--cream)]" style={{ color: "var(--cream-muted)" }}>
                     {item.label}
                   </Link>
                   <span aria-hidden className="opacity-40">

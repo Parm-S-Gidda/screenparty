@@ -29,6 +29,8 @@ export async function applyHolAction(ctx: Ctx, action: GameAction): Promise<void
       return handleVote(ctx, action.vote);
     case "REVEAL_ROUND":
       return handleForceReveal(ctx);
+    case "SHOW_SCOREBOARD":
+      return handleShowScoreboard(ctx);
     case "NEXT_ROUND":
       return handleNextRound(ctx);
     case "END_GAME":
@@ -52,7 +54,7 @@ async function handleStart(ctx: Ctx) {
   if (players.length < MIN_PLAYERS)
     throw new GameError(400, `Need at least ${MIN_PLAYERS} players for Higher or Lower`);
 
-  const { data: rows, error } = await ctx.admin.from("hol_items").select("label, value, unit");
+  const { data: rows, error } = await ctx.admin.from("hol_items").select("label, value, unit, category");
   if (error || !rows || rows.length < CHAIN_LENGTH + 1)
     throw new GameError(500, "Not enough items available");
 
@@ -60,6 +62,7 @@ async function handleStart(ctx: Ctx) {
     label: r.label,
     value: Number(r.value),
     unit: r.unit,
+    category: r.category,
   }));
 
   await ctx.admin.from("scores").insert(
@@ -82,7 +85,7 @@ async function handleStart(ctx: Ctx) {
 }
 
 function roundPayload(
-  items: { label: string; value: number; unit: string }[],
+  items: { label: string; value: number; unit: string; category: string }[],
   index: number,
   knownLeftValue: number | null
 ): PublicPayload {
@@ -92,9 +95,11 @@ function roundPayload(
     holRound: {
       leftLabel: left.label,
       leftUnit: left.unit,
+      leftCategory: left.category,
       leftValue: knownLeftValue, // null = first round (both hidden)
       rightLabel: right.label,
       rightUnit: right.unit,
+      rightCategory: right.category,
       openedAt: new Date().toISOString(),
     },
   };
@@ -188,9 +193,15 @@ async function revealRound(ctx: Ctx) {
     .eq("id", ctx.session.id);
 }
 
-async function handleNextRound(ctx: Ctx) {
+async function handleShowScoreboard(ctx: Ctx) {
   assertHost(ctx);
   assertState(ctx.session, ["HOL_REVEAL"]);
+  await updateSession(ctx, { current_state: "SCOREBOARD", public_payload: {} });
+}
+
+async function handleNextRound(ctx: Ctx) {
+  assertHost(ctx);
+  assertState(ctx.session, ["SCOREBOARD"]);
   const next = ctx.session.current_question_index + 1;
   if (next >= ctx.session.question_count) {
     await endGame(ctx);

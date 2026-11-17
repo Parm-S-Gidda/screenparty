@@ -47,13 +47,17 @@ export function BillingNotice({ kind }: { kind: "success" | "cancelled" }) {
 
   if (!show) return null;
 
-  return kind === "success" ? (
-    <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-medium text-emerald-400">
-      Payment received — activating your Party Pass...
-    </div>
-  ) : (
-    <div className="mb-4 rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-      Checkout cancelled, no changes made.
+  const success = kind === "success";
+  return (
+    <div
+      role="status"
+      className="panel-paper mb-6 flex items-center gap-3 px-4 py-3"
+      style={{ background: success ? "var(--teal)" : "var(--cream)" }}
+    >
+      <span aria-hidden className="h-3 w-3 shrink-0 rounded-full border-2" style={{ borderColor: "var(--ink)", background: success ? "var(--cream)" : "var(--paper)" }} />
+      <p className="font-hand text-lg leading-snug" style={{ color: "var(--ink)" }}>
+        {success ? "Payment received. Activating your plan…" : "Checkout cancelled, no changes made."}
+      </p>
     </div>
   );
 }

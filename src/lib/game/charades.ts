@@ -4,6 +4,7 @@
 // points if someone guesses correctly. Host can end the round early.
 
 import { CHARADES_POINTS, LIMITS } from "@/lib/constants";
+import { containsBlockedWord } from "@/lib/moderation";
 import { trackUsage } from "@/lib/ai/usage";
 import {
   activePlayers,
@@ -109,6 +110,7 @@ async function handleGuess(ctx: Ctx, rawGuess: string) {
 
   const guess = String(rawGuess ?? "").trim().slice(0, LIMITS.charadesGuessMaxLength);
   if (guess.length === 0) throw new GameError(400, "Guess can't be empty");
+  if (containsBlockedWord(guess)) throw new GameError(400, "Keep your guess friendly");
 
   const isCorrect = normalise(guess) === normalise(current.word);
   if (!isCorrect) {

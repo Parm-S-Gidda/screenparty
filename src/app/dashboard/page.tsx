@@ -7,9 +7,6 @@ export const metadata: Metadata = {
 };
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   BRAND_NAME,
   LIMITS,
@@ -75,121 +72,140 @@ export default async function DashboardPage({
     .eq("host_user_id", user.id)
     .gte("created_at", dayStart.toISOString());
 
+  const limits = LIMITS[planTier];
+  const planName = hasDayPass ? "Party Pass" : PLAN_LABELS[planTier];
+  const meters = [
+    { label: "Virtual Host games", used: usedOf("ai_host_games"), max: limits.aiHostGamesPerMonth, when: "this month" },
+    { label: "Rooms opened", used: roomsToday ?? 0, max: limits.maxRoomsPerDay, when: "today" },
+  ];
+
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 p-6">
-      <div className="mb-8 flex items-center justify-between">
-        <Link href="/" className="font-display text-3xl uppercase tracking-wide">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-5 pb-20 pt-5 md:px-8">
+      <header className="mb-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <Link href="/" className="font-display text-2xl uppercase leading-none md:text-3xl" aria-label={`${BRAND_NAME} home`}>
           <span style={{ color: "var(--mustard)" }}>{BRAND_NAME.slice(0, 6)}</span>
           <span style={{ color: "var(--coral)" }}>{BRAND_NAME.slice(6)}</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/join"
-            className="btn-rough px-4 py-1.5 text-base"
-            style={{ background: "var(--coral)", color: "#221f30" }}
-          >
+        <nav aria-label="Dashboard" className="flex flex-wrap items-center gap-x-6">
+          <Link href="/account" className="link-label" style={{ color: "var(--cream)" }}>
+            Account
+          </Link>
+          <Link href="/join" className="link-label" style={{ color: "var(--cream)" }}>
             Join a game
           </Link>
-          <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
           <SignOutButton />
-        </div>
-      </div>
+        </nav>
+      </header>
 
       {billing === "success" && <BillingNotice kind="success" />}
       {billing === "cancelled" && <BillingNotice kind="cancelled" />}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              Your plan
-              <Badge variant={planTier === "free" ? "secondary" : "default"}>
-                {hasDayPass ? "Party Pass" : PLAN_LABELS[planTier]}
-              </Badge>
-              {hasDayPass && profile?.day_pass_expires_at && (
-                <span className="text-xs font-normal leading-none text-card-foreground/60">
-                  Active until {new Date(profile.day_pass_expires_at).toLocaleString()}
-                </span>
-              )}
-            </CardTitle>
-            <Button asChild size="sm" variant={subscribed || hasDayPass ? "outline" : "default"}>
-              <Link href="/account">Manage account</Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <UsageStat
-              label="Virtual Host games this month"
-              value={usedOf("ai_host_games")}
-              cap={LIMITS[planTier].aiHostGamesPerMonth}
-            />
-            <UsageStat
-              label="Rooms today"
-              value={roomsToday ?? 0}
-              cap={LIMITS[planTier].maxRoomsPerDay}
-            />
-            <UsageStat label="Active rooms" value={activeRooms.length} />
-          </div>
-          <p className="mt-3 text-sm text-card-foreground/75">
-            Your plan hosts up to {LIMITS[planTier].maxPlayers} players ·{" "}
-            up to {LIMITS[planTier].maxQuestions} rounds per game ·{" "}
-            {LIMITS[planTier].roomTtlHours}-hour rooms
-          </p>
-        </CardContent>
-      </Card>
-
-      <p className="font-score mb-3 text-center text-xs uppercase tracking-[0.3em] text-muted-foreground">
-        pick a game
-      </p>
-      <GameCardDeck />
-
-      {activeRoomsSection(activeRooms)}
-    </main>
-  );
-}
-
-function UsageStat({ label, value, cap }: { label: string; value: number; cap?: number }) {
-  return (
-    <div className="rounded-lg border p-3">
-      <p className="text-sm font-medium text-card-foreground/70">{label}</p>
-      <p className="text-xl font-black tabular-nums">
-        {value.toLocaleString()}
-        {cap !== undefined && (
-          <span className="text-sm font-semibold text-card-foreground/60"> / {cap.toLocaleString()}</span>
-        )}
-      </p>
-    </div>
-  );
-}
-
-function activeRoomsSection(
-  activeRooms: { id: string; room_code: string; status: string }[]
-) {
-  return (
-    <>
+      {/* a live room is the fastest way back into the party, so it leads */}
       {activeRooms.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Active rooms</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {activeRooms.map((room) => (
-              <div key={room.id} className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-lg font-bold tracking-widest">{room.room_code}</span>
-                  <Badge variant={room.status === "lobby" ? "secondary" : "default"}>
-                    {room.status === "lobby" ? "In lobby" : "In game"}
-                  </Badge>
+        <section aria-labelledby="live-heading" className="mb-12">
+          <h2 id="live-heading" className="font-display mb-4 text-2xl uppercase" style={{ color: "var(--cream)" }}>
+            {activeRooms.length === 1 ? "Your room is live" : "Your live rooms"}
+          </h2>
+          <ul className="flex flex-col gap-4">
+            {activeRooms.map((room, i) => (
+              <li key={room.id} className="panel flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+                <div className="flex items-center gap-5">
+                  <div className="flex flex-col">
+                    <span className="font-score text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+                      Room code
+                    </span>
+                    <span className="font-display text-4xl leading-none tracking-[0.15em]" style={{ color: "var(--ink)" }}>
+                      {room.room_code}
+                    </span>
+                  </div>
+                  <span className="chip">
+                    <span
+                      aria-hidden
+                      className="mr-2 inline-block h-2.5 w-2.5 rounded-full"
+                      style={{ background: room.status === "lobby" ? "var(--leaf)" : "var(--tomato)" }}
+                    />
+                    {room.status === "lobby" ? "In the lobby" : "Game on"}
+                  </span>
                 </div>
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/screen/${room.room_code}`}>Open main screen</Link>
-                </Button>
-              </div>
+                <Link
+                  href={`/screen/${room.room_code}`}
+                  className="btn-rough px-6 py-2.5 text-lg"
+                  style={i === 0 ? undefined : { background: "var(--ink)", color: "var(--cream)" }}
+                >
+                  Open big screen
+                </Link>
+              </li>
             ))}
-          </CardContent>
-        </Card>
+          </ul>
+        </section>
       )}
-    </>
+
+      <div className="mb-8 flex flex-col gap-1">
+        <h1 className="font-display text-[clamp(2rem,5vw,3rem)] uppercase leading-[0.95]" style={{ color: "var(--cream)" }}>
+          What are we <span style={{ color: "var(--mustard)" }}>playing?</span>
+        </h1>
+        <p className="font-hand text-xl" style={{ color: "var(--cream-muted)" }}>
+          Pick a game to set up a room. You&apos;ll get a code for everyone to join.
+        </p>
+      </div>
+
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-12">
+        <section aria-label="Games">
+          <GameCardDeck />
+        </section>
+
+        <aside aria-label="Your plan" className="flex flex-col gap-6 lg:sticky lg:top-6 lg:h-fit">
+          <div className="panel-paper panel-grain flex flex-col gap-5 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-score text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+                  Your plan
+                </p>
+                <p className="font-display text-2xl leading-tight" style={{ color: "var(--ink)" }}>
+                  {planName}
+                </p>
+                {hasDayPass && profile?.day_pass_expires_at && (
+                  <p className="font-hand text-base" style={{ color: "var(--ink-label)" }}>
+                    Ends {new Date(profile.day_pass_expires_at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <dl className="flex flex-col gap-4">
+              {meters.map((m) => {
+                const pct = m.max > 0 ? Math.min(100, Math.round((m.used / m.max) * 100)) : 0;
+                const full = m.used >= m.max;
+                return (
+                  <div key={m.label} className="flex flex-col gap-1.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <dt className="font-hand text-lg leading-tight" style={{ color: "var(--ink-body)" }}>
+                        {m.label} <span style={{ color: "var(--ink-label)" }}>{m.when}</span>
+                      </dt>
+                      <dd className="font-score whitespace-nowrap text-base tabular-nums" style={{ color: full ? "var(--error-red)" : "var(--ink)" }}>
+                        {m.used} / {m.max}
+                      </dd>
+                    </div>
+                    <div aria-hidden className="h-3 overflow-hidden rounded-full border-2" style={{ borderColor: "var(--ink)", background: "var(--card-white)" }}>
+                      <div className="h-full" style={{ width: `${pct}%`, background: full ? "var(--tomato)" : "var(--teal)" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </dl>
+
+
+            <Link
+              href="/account"
+              className="font-score text-center text-sm uppercase tracking-[0.12em] underline decoration-2 underline-offset-4"
+              style={{ color: "var(--ink)" }}
+            >
+              {subscribed || hasDayPass ? "Manage plan" : "Need a bigger room? Upgrade"}
+            </Link>
+          </div>
+
+        </aside>
+      </div>
+    </main>
   );
 }

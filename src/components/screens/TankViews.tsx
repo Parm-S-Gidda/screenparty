@@ -115,7 +115,7 @@ export function TankInvestingView({
       </Panel>
 
       <p className="font-display text-4xl uppercase" style={{ color: "var(--mustard)" }}>
-        🦈 Do you invest?
+        Do you invest?
       </p>
 
       <div className="font-hand text-xl opacity-70">{investmentsIn} / {investorsNeeded} voted</div>
@@ -212,7 +212,7 @@ export function TankPitchPhone({
           <p className="font-hand mt-1 text-lg" style={{ color: "#4a4460" }}>{tankRound.tagline}</p>
         </TapedLabel>
         <p className="font-hand text-xl opacity-80">
-          Sell it! You have {tankRound.pitchSeconds} seconds on the clock 🎤
+          Sell it! You have {tankRound.pitchSeconds} seconds on the clock!
         </p>
       </div>
     );
@@ -254,7 +254,7 @@ export function TankInvestPhone({
       <div className="flex flex-col items-center gap-4 text-center">
         <Mascot avatarId={me ? "party" : "robot"} size={72} expression="buzzed" />
         <p className="font-display text-3xl uppercase">Waiting for the verdict…</p>
-        <p className="font-hand text-xl opacity-70">Will the sharks invest? 🦈</p>
+        <p className="font-hand text-xl opacity-70">Will the sharks invest?</p>
       </div>
     );
   }
@@ -280,7 +280,7 @@ export function TankInvestPhone({
             opacity: myVote !== null && myVote !== true ? 0.4 : 1,
           }}
         >
-          💰 Invest
+          Invest
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.92 }}
@@ -293,7 +293,7 @@ export function TankInvestPhone({
             opacity: myVote !== null && myVote !== false ? 0.4 : 1,
           }}
         >
-          ✋ Pass
+          Pass
         </motion.button>
       </div>
 

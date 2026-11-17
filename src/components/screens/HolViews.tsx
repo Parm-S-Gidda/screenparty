@@ -120,8 +120,8 @@ export function HolRevealView({
       )}
 
       {isOwner && (
-        <RoughButton onClick={() => act({ type: "NEXT_ROUND" })} className="mt-2 px-8 py-3 text-xl">
-          {isLast ? "See final scores →" : "Next →"}
+        <RoughButton onClick={() => act({ type: "SHOW_SCOREBOARD" })} className="mt-2 px-8 py-3 text-xl">
+          {isLast ? "Final scores →" : "Scores →"}
         </RoughButton>
       )}
     </div>
@@ -174,7 +174,7 @@ export function HolVotePanel({
               opacity: myVote && myVote !== v ? 0.4 : 1,
             }}
           >
-            {v === "higher" ? "⬆ Higher" : "⬇ Lower"}
+            {v === "higher" ? "▲ Higher" : "▼ Lower"}
           </motion.button>
         ))}
       </div>

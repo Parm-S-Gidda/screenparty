@@ -73,7 +73,7 @@ export function PublicFooter() {
           {/* Games */}
           <div>
             <h3
-              className="font-score mb-3 text-[11px] uppercase tracking-[0.3em]"
+              className="font-score mb-3 text-xs uppercase tracking-[0.3em]"
               style={{ color: "var(--mustard)" }}
             >
               Games
@@ -96,7 +96,7 @@ export function PublicFooter() {
           {/* Product */}
           <div>
             <h3
-              className="font-score mb-3 text-[11px] uppercase tracking-[0.3em]"
+              className="font-score mb-3 text-xs uppercase tracking-[0.3em]"
               style={{ color: "var(--mustard)" }}
             >
               Product
@@ -116,7 +116,7 @@ export function PublicFooter() {
             </ul>
 
             <h3
-              className="font-score mb-3 mt-6 text-[11px] uppercase tracking-[0.3em]"
+              className="font-score mb-3 mt-6 text-xs uppercase tracking-[0.3em]"
               style={{ color: "var(--mustard)" }}
             >
               Occasions
@@ -139,7 +139,7 @@ export function PublicFooter() {
           {/* Account + Legal */}
           <div>
             <h3
-              className="font-score mb-3 text-[11px] uppercase tracking-[0.3em]"
+              className="font-score mb-3 text-xs uppercase tracking-[0.3em]"
               style={{ color: "var(--mustard)" }}
             >
               Account
@@ -175,7 +175,7 @@ export function PublicFooter() {
             </ul>
 
             <h3
-              className="font-score mb-3 mt-6 text-[11px] uppercase tracking-[0.3em]"
+              className="font-score mb-3 mt-6 text-xs uppercase tracking-[0.3em]"
               style={{ color: "var(--mustard)" }}
             >
               Legal
@@ -204,8 +204,8 @@ export function PublicFooter() {
             {BRAND_NAME}, bring the game show home.
           </p>
           <p
-            className="font-score text-[10px] uppercase tracking-[0.25em]"
-            style={{ color: "var(--muted-foreground)", opacity: 0.5 }}
+            className="font-score text-xs uppercase tracking-[0.25em]"
+            style={{ color: "var(--muted-foreground)" }}
           >
             No app · No console · Just browsers
           </p>

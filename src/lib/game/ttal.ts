@@ -42,6 +42,8 @@ export async function applyTtalAction(ctx: Ctx, action: GameAction): Promise<voi
       return handleSubmitStatements(ctx, action.statements);
     case "CAST_VOTE":
       return handleCastVote(ctx, action.statementId);
+    case "FORCE_COLLECT_DONE":
+      return handleForceCollectDone(ctx);
     case "REVEAL_ROUND":
       return handleForceReveal(ctx);
     case "SHOW_SCOREBOARD":
@@ -106,7 +108,7 @@ async function handleStart(ctx: Ctx) {
     question_count: subjectOrder.length * rounds,
     settings: { ...ctx.session.settings, subjectOrder, rounds },
     started_at: new Date().toISOString(),
-    public_payload: {},
+    public_payload: { collectingOpenedAt: new Date().toISOString() },
   });
   await ctx.admin.from("rooms").update({ status: "in_game" }).eq("id", ctx.room.id);
   if (ctx.session.host_mode === "virtual") {
@@ -247,7 +249,7 @@ async function startCollecting(
     current_state: "COLLECTING",
     current_question_index: index,
     current_player_id: null,
-    public_payload: {},
+    public_payload: { collectingOpenedAt: new Date().toISOString() },
   });
 }
 
@@ -283,11 +285,26 @@ async function handleCastVote(ctx: Ctx, statementId: string) {
     .eq("subject_player_id", round.subjectId)
     .eq("round_number", cycle);
 
-  if ((votesIn ?? 0) >= votersNeeded) {
+  // In virtual mode the host driver reads all statements then fires REVEAL_ROUND,
+  // so we never auto-reveal here — just bump so the vote count updates on screen.
+  if ((votesIn ?? 0) >= votersNeeded && ctx.session.host_mode !== "virtual") {
     await revealRound(ctx);
   } else {
     await updateSession(ctx, {}); // bump so screens update the votes-in counter
   }
+}
+
+async function handleForceCollectDone(ctx: Ctx) {
+  assertHost(ctx);
+  assertState(ctx.session, ["COLLECTING"]);
+  const cycle = currentCycle(ctx);
+  const { count } = await ctx.admin
+    .from("ttal_statements")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", ctx.session.id)
+    .eq("round_number", cycle);
+  if ((count ?? 0) === 0) throw new GameError(400, "Nobody has submitted statements yet");
+  await startTurn(ctx, ctx.session.current_question_index, "COLLECTING");
 }
 
 async function handleForceReveal(ctx: Ctx) {

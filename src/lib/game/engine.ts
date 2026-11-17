@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ATTEMPT_POINTS, LIMITS, MAX_LLM_JUDGMENTS_PER_GAME } from "@/lib/constants";
+import { containsBlockedWord } from "@/lib/moderation";
 import { judgeAnswer } from "./judge";
 import { trackUsage } from "@/lib/ai/usage";
 import type {
@@ -286,8 +287,9 @@ async function handleStartGame(ctx: Ctx) {
   assertTeamsReady(players, ctx.session.settings.teamsEnabled);
 
   const settings = ctx.session.settings;
+  const table = settings.packSource === "custom" ? "custom_pack_questions" : "pack_questions";
   let query = ctx.admin
-    .from("pack_questions")
+    .from(table)
     .select("question_text, correct_answer, accepted_answers, difficulty")
     .eq("pack_id", settings.packId);
   if (settings.difficulty !== "mixed") query = query.eq("difficulty", settings.difficulty);
@@ -544,6 +546,7 @@ async function handleSubmitAnswer(ctx: Ctx, rawText: string) {
 
   const text = String(rawText ?? "").slice(0, LIMITS.answerMaxLength).trim();
   if (!text) throw new GameError(400, "Type an answer first");
+  if (containsBlockedWord(text)) throw new GameError(400, "Keep your answer friendly");
 
   const question = await currentQuestion(ctx);
 
