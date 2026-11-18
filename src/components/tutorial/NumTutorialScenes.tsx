@@ -3,7 +3,8 @@
 // Live demo for the Number Crunch tutorial: a scripted fake round drawn with
 // the same props the real game uses (NumScale, RevealRow, mascots, stamps).
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Mascot } from "@/components/cartoon/Mascot";
 import { Stamp } from "@/components/cartoon/Stamp";
 import { NumScale, RevealRow } from "@/components/screens/NumViews";
@@ -138,14 +139,30 @@ export function NumTutorialScene({ scene, hostMode }: SceneProps) {
   }
 }
 
-/** Examples drop onto the ruler at the guesser's numbers, one after another. */
+/** Sam's live slider rides the ruler: wobbles on each example, then settles on the guess. */
+const SLIDE_PATH = CAST.flatMap((c) => [5, c.guess > 5 ? c.guess - 2 : c.guess + 2, c.guess, c.guess]);
+
 function SlidingScale() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep((s) => Math.min(s + 1, SLIDE_PATH.length - 1)), 650);
+    return () => clearInterval(id);
+  }, []);
+  const current = CAST[Math.floor(step / 4)];
   return (
-    <NumScale
-      theme={THEME.theme}
-      low={`1 = ${THEME.low}`}
-      high={`10 = ${THEME.high}`}
-      markers={CAST.map((c) => ({ n: c.guess, label: c.example === "The surface of the sun" ? "The sun" : c.example }))}
-    />
+    <div className="flex w-full flex-col items-center gap-5">
+      <NumScale
+        theme={THEME.theme}
+        low={`1 = ${THEME.low}`}
+        high={`10 = ${THEME.high}`}
+        size="md"
+        pointer={{ n: SLIDE_PATH[step], avatarId: GUESSER.avatarId }}
+      />
+      <AnimatePresence mode="wait">
+        <motion.div key={current.example} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={pop} className="panel-paper px-8 py-4" style={{ outline: "4px solid var(--mustard)", outlineOffset: 3 }}>
+          <p className="font-hand text-3xl leading-tight" style={{ color: "var(--ink)" }}>&ldquo;{current.example}&rdquo;</p>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }

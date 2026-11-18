@@ -16,10 +16,22 @@ import {
   resolveTier,
 } from "@/lib/constants";
 import { rateLimit } from "@/lib/rateLimit";
-import { getUsage } from "@/lib/ai/usage";
+import { getUsage, trackUsage } from "@/lib/ai/usage";
+import { openAiConfigured } from "@/lib/ai/openai";
+import { AI_THEME_GAMES, generateGameContent } from "@/lib/ai/gameContent";
+import { containsBlockedWord } from "@/lib/moderation";
 import type { GameSettings } from "@/lib/game/types";
 import { GAMES } from "@/lib/games";
 import { clampMaxPlayers } from "@/lib/playerRange";
+
+// The host owns this store pack and it has content for this game.
+async function ownsPackWith(admin: ReturnType<typeof createAdminClient>, userId: string, packId: string, gameType: string) {
+  const [{ data: purchase }, { count }] = await Promise.all([
+    admin.from("pack_purchases").select("id").eq("user_id", userId).eq("pack_id", packId).neq("status", "refunded").maybeSingle(),
+    admin.from("store_pack_items").select("id", { count: "exact", head: true }).eq("pack_id", packId).eq("game_type", gameType),
+  ]);
+  return Boolean(purchase) && (count ?? 0) > 0;
+}
 
 // POST /api/rooms, create a room + lobby game session (authenticated hosts only)
 export async function POST(request: NextRequest) {
@@ -53,8 +65,11 @@ export async function POST(request: NextRequest) {
     let questionCount = 0;
     if (gameType === "buzz_trivia") {
       packId = String(body.packId ?? "");
-      const packSource: "builtin" | "custom" = body.packSource === "custom" ? "custom" : "builtin";
-      if (packSource === "custom") {
+      const packSource = body.packSource === "custom" || body.packSource === "store" ? body.packSource : "builtin";
+      if (packSource === "store") {
+        if (!(await ownsPackWith(admin, user.id, packId, "buzz_trivia")))
+          throw new GameError(403, "You don't own that pack");
+      } else if (packSource === "custom") {
         const { data: customPack } = await admin
           .from("custom_packs")
           .select("id, host_user_id")
@@ -119,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     const settings: GameSettings = {
       packId,
-      packSource: body.packSource === "custom" ? "custom" : "builtin",
+      packSource: body.packSource === "custom" || body.packSource === "store" ? body.packSource : "builtin",
       questionCount,
       difficulty,
       hostMode,
@@ -161,6 +176,41 @@ export async function POST(request: NextRequest) {
     if (settings.teamsEnabled && tier === "free" && !TEAMS_FREE_BETA)
       throw new GameError(403, "Team mode requires a paid plan");
 
+    // store pack: its rows for this game go first in the pool (trivia reads
+    // them straight from the pack via packSource "store" instead)
+    const storePackId = String(body.storePackId ?? "");
+    if (storePackId && gameType !== "buzz_trivia") {
+      if (!(await ownsPackWith(admin, user.id, storePackId, gameType)))
+        throw new GameError(403, "You don't own that pack");
+      const { data: items } = await admin
+        .from("store_pack_items")
+        .select("data")
+        .eq("pack_id", storePackId)
+        .eq("game_type", gameType);
+      settings.storePackId = storePackId;
+      settings.aiPool = (items ?? []).map((i) => i.data);
+    }
+
+    // AI theme (paid only, counts against the monthly AI pack allowance):
+    // generate the round content up front so the game starts instantly
+    const aiTopic = String(body.aiTopic ?? "").trim().slice(0, 100);
+    if (aiTopic && AI_THEME_GAMES.includes(gameType)) {
+      if (tierLimits.aiPackGenPerMonth === 0) throw new GameError(403, "AI themes need a paid plan");
+      if ((await getUsage(admin, user.id, "ai_pack_gen")) >= tierLimits.aiPackGenPerMonth)
+        throw new GameError(403, "You've used all your AI generations this month");
+      if (containsBlockedWord(aiTopic)) throw new GameError(400, "Keep the theme friendly");
+      if (!openAiConfigured()) throw new GameError(503, "AI themes aren't set up on this server");
+      // one item per round; per-player games get one per possible player (capped)
+      const want =
+        gameType === "hol" ? 13
+        : ["tank", "charades", "num"].includes(gameType) ? Math.min(settings.maxPlayers, 16)
+        : questionCount;
+      const pool = await generateGameContent(gameType, aiTopic, want);
+      if (pool.length === 0) throw new GameError(502, "The AI couldn't write that theme, try again or tweak it");
+      settings.aiTopic = aiTopic;
+      settings.aiPool = [...(settings.aiPool ?? []), ...pool];
+    }
+
     // insert with a fresh code, retrying on the rare collision
     let room = null;
     for (let attempt = 0; attempt < 5 && !room; attempt++) {
@@ -188,6 +238,7 @@ export async function POST(request: NextRequest) {
       settings,
     });
     if (sessionError) throw new GameError(500, sessionError.message);
+    if (settings.aiTopic) await trackUsage(admin, user.id, "ai_pack_gen", 1);
 
     return Response.json({ roomId: room.id, code: room.room_code });
   } catch (err) {

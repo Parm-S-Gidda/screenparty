@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import type { OwnedPackOption } from "@/lib/store";
 import { AUTO_SKIP_OPTIONS, LIMITS, QUESTION_COUNT_OPTIONS, type PlanTier } from "@/lib/constants";
-import { ChoiceCards, HOST_MODES, OptionChips, SettingRow, SetupSection, SetupShell, PlayerCapRow, Toggle, TutorialRow, createRoom } from "@/components/setup/SetupParts";
+import { AiThemeSection, ChoiceCards, OwnedPackPicker, HOST_MODES, OptionChips, SettingRow, SetupSection, SetupShell, PlayerCapRow, Toggle, TutorialRow, createRoom } from "@/components/setup/SetupParts";
 
 type Pack = {
   id: string;
@@ -23,19 +24,23 @@ export function ConfigForm({
   packs,
   planTier,
   canAiGenerate,
+  ownedPacks,
 }: {
   packs: Pack[];
   planTier: PlanTier;
   canAiGenerate?: boolean;
+  ownedPacks: OwnedPackOption[];
 }) {
   const router = useRouter();
   const [packTab, setPackTab] = useState<PackTab>("builtin");
   const [packId, setPackId] = useState(packs[0]?.id ?? "");
-  const [packSource, setPackSource] = useState<"builtin" | "custom">("builtin");
+  const [packSource, setPackSource] = useState<"builtin" | "custom" | "store">("builtin");
   const [customPacks, setCustomPacks] = useState<CustomPack[] | null>(null);
   const [loadingCustom, setLoadingCustom] = useState(false);
   const [genTopic, setGenTopic] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [genCount, setGenCount] = useState(10);
+  const [genNote, setGenNote] = useState("");
   const [difficulty, setDifficulty] = useState("mixed");
   const [questionCount, setQuestionCount] = useState(10);
   const [hostMode, setHostMode] = useState<"self" | "virtual">("self");
@@ -50,8 +55,8 @@ export function ConfigForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function loadCustomPacks() {
-    if (customPacks !== null) return;
+  async function loadCustomPacks(force = false) {
+    if (customPacks !== null && !force) return;
     setLoadingCustom(true);
     const res = await fetch("/api/packs");
     if (res.ok) setCustomPacks(await res.json());
@@ -66,14 +71,19 @@ export function ConfigForm({
       const res = await fetch("/api/packs/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ topic: genTopic.trim(), count: questionCount, difficulty }),
+        body: JSON.stringify({ topic: genTopic.trim(), count: genCount, difficulty }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      // Select the new pack immediately
+      // Select the new pack immediately and play all of it
       setPackId(data.packId);
       setPackSource("custom");
-      setCustomPacks(null); // force reload next time
+      setPackTab("my-packs");
+      setCustomPacks(null);
+      void loadCustomPacks(true);
+      const playable = QUESTION_COUNT_OPTIONS.filter((n) => n <= data.questionCount && n <= max);
+      if (playable.length) setQuestionCount(playable[playable.length - 1]);
+      setGenNote(`"${data.title}" is ready with ${data.questionCount} questions and selected below.`);
       setGenTopic("");
     } catch (e) {
       setError((e as Error).message);
@@ -142,6 +152,33 @@ export function ConfigForm({
       disabled={!packId}
       onLaunch={launch}
     >
+      <AiThemeSection
+        locked={!canAiGenerate}
+        topic={genTopic}
+        onTopic={setGenTopic}
+        placeholder="A topic, like 90s movies or world capitals"
+        hint="Type a topic and AI writes a question pack for it. It's saved to your packs and selected for this game."
+        status={generating ? "Writing your questions, this takes about 10 seconds…" : genNote}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <OptionChips
+            label="Questions to write"
+            value={genCount}
+            onChange={setGenCount}
+            options={QUESTION_COUNT_OPTIONS.map((n) => ({ value: n, label: `${n} Qs`, disabled: n > max, title: n > max ? "Bigger plans" : undefined }))}
+          />
+          <button
+            type="button"
+            onClick={generateAndSelect}
+            disabled={generating || !genTopic.trim()}
+            className="btn-rough px-5 py-2 text-lg"
+            style={{ background: "var(--teal)" }}
+          >
+            {generating ? "Writing…" : "Write the pack"}
+          </button>
+        </div>
+      </AiThemeSection>
+
       <SetupSection title="Question pack">
         <div role="tablist" aria-label="Pack source" className="mb-4 grid grid-cols-3 gap-1 rounded-xl border-[3px] p-1" style={{ borderColor: "var(--ink)", background: "var(--paper)" }}>
           {(["builtin", "my-packs", "store"] as PackTab[]).map((tab) => {
@@ -159,7 +196,7 @@ export function ConfigForm({
                 className="font-score min-h-11 rounded-lg text-sm uppercase tracking-[0.1em] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--mustard)]"
                 style={{ background: on ? "var(--ink)" : "transparent", color: on ? "var(--cream)" : "var(--ink)" }}
               >
-                {tab === "builtin" ? "Built-in" : tab === "my-packs" ? "My packs" : "Get more"}
+                {tab === "builtin" ? "Built-in" : tab === "my-packs" ? "My packs" : "Store packs"}
               </button>
             );
           })}
@@ -191,7 +228,7 @@ export function ConfigForm({
               <div className="flex flex-col items-center gap-1 rounded-xl border-[3px] border-dashed px-4 py-6 text-center" style={{ borderColor: "rgba(34,31,48,0.35)" }}>
                 <p className="font-display text-lg" style={{ color: "var(--ink)" }}>No packs of your own yet</p>
                 <p className="font-hand text-base" style={{ color: "var(--ink-body)" }}>
-                  Write your own questions{canAiGenerate ? ", or have AI write a pack below" : ""}.
+                  Write your own questions{canAiGenerate ? ", or have AI write a pack in the AI theme panel" : ""}.
                 </p>
               </div>
             )}
@@ -206,49 +243,20 @@ export function ConfigForm({
               Write and edit your packs →
             </Link>
 
-            {canAiGenerate && (
-              <div className="flex flex-col gap-2 border-t-2 border-dashed pt-4" style={{ borderColor: "rgba(34,31,48,0.25)" }}>
-                <label htmlFor="ai-topic" className="font-display text-lg" style={{ color: "var(--ink)" }}>
-                  Have AI write a pack
-                </label>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    id="ai-topic"
-                    className="font-hand h-12 flex-1 rounded-xl border-[3px] border-[var(--ink)] bg-[var(--card-white)] px-3 text-lg text-[var(--ink)] outline-none placeholder:text-[var(--ink)]/35"
-                    placeholder="A topic, like 90s movies or world capitals"
-                    value={genTopic}
-                    onChange={(e) => setGenTopic(e.target.value)}
-                    maxLength={100}
-                  />
-                  <button
-                    type="button"
-                    onClick={generateAndSelect}
-                    disabled={generating || !genTopic.trim()}
-                    className="btn-rough px-5 py-2 text-lg"
-                    style={{ background: "var(--teal)" }}
-                  >
-                    {generating ? "Writing…" : "Write it"}
-                  </button>
-                </div>
-                <p role="status" className="font-hand text-base" style={{ color: "var(--ink-label)" }}>
-                  {generating
-                    ? "Writing your questions, this takes about 10 seconds…"
-                    : packId && packSource === "custom"
-                      ? "Your pack is selected and ready."
-                      : ""}
-                </p>
-              </div>
-            )}
           </div>
         )}
 
         {packTab === "store" && (
-          <div className="flex flex-col items-center gap-1 rounded-xl border-[3px] border-dashed px-4 py-8 text-center" style={{ borderColor: "rgba(34,31,48,0.35)" }}>
-            <p className="font-display text-lg" style={{ color: "var(--ink)" }}>More packs coming soon</p>
-            <p className="font-hand max-w-xs text-base" style={{ color: "var(--ink-body)" }}>
-              Premium topic packs for sport, movies, music and more.
-            </p>
-          </div>
+          <OwnedPackPicker
+            packs={ownedPacks}
+            value={packSource === "store" ? packId : ""}
+            onChange={(id) => {
+              // "" (standard mix) falls back to the first built-in pack
+              setPackId(id || packs[0]?.id || "");
+              setPackSource(id ? "store" : "builtin");
+            }}
+            unit="questions"
+          />
         )}
       </SetupSection>
 

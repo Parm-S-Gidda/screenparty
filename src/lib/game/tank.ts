@@ -14,6 +14,7 @@ import {
   shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
@@ -58,14 +59,15 @@ async function handleStart(ctx: Ctx) {
     throw new GameError(500, "Not enough products available");
 
   const shuffledPlayers = shuffle(players);
-  const shuffledProducts = shuffle(rows);
+  const shuffledProducts = themedPool(ctx.session.settings.aiPool, rows);
   const tankProducts = shuffledPlayers.map((p, i) => ({
     pitcherId: p.id,
     productName: shuffledProducts[i].name,
     tagline: shuffledProducts[i].tagline,
   }));
 
-  const pitchSeconds = DEFAULT_PITCH_SECONDS;
+  // pitches get twice the room's answer time (default 30s -> 60s)
+  const pitchSeconds = (ctx.session.settings.autoSkipSeconds || DEFAULT_PITCH_SECONDS / 2) * 2;
   await ctx.admin.from("scores").insert(
     players.map((p) => ({ session_id: ctx.session.id, player_id: p.id, score: 0 }))
   );
@@ -138,8 +140,9 @@ async function handleForceReveal(ctx: Ctx) {
     const products = ctx.session.settings.tankProducts ?? [];
     const pitcher = products[ctx.session.current_question_index];
     if (!pitcher) throw new GameError(500, "No active pitch");
+    const round = ctx.session.public_payload.tankRound;
     const payload: PublicPayload = {
-      tankRound: ctx.session.public_payload.tankRound,
+      tankRound: round && { ...round, investStart: new Date().toISOString() },
     };
     await updateSession(ctx, { current_state: "TANK_INVESTING", public_payload: payload });
     return;

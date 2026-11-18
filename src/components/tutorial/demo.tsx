@@ -6,6 +6,7 @@
 // its tutorial for free. Everything is inert: a picture of the game, never a
 // working control.
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mascot } from "@/components/cartoon/Mascot";
 import { StateView } from "@/components/screens/MainScreen";
@@ -87,11 +88,26 @@ export function demoState(opts: {
   };
 }
 
+// Scenes stamp their fake round "opened" times when the module loads; restart
+// those clocks when the scene appears so its timer line starts full.
+function withFreshClocks(state: RoomStateResponse, at: string): RoomStateResponse {
+  if (!state.session) return state;
+  const stamp = (o: object) =>
+    Object.fromEntries(
+      Object.entries(o).map(([k, v]) => [k, typeof v === "string" && /(openedAt|OpenedAt|Start)$/.test(k) ? at : v]),
+    );
+  const payload = Object.fromEntries(
+    Object.entries(stamp(state.session.payload)).map(([k, v]) => [k, v && typeof v === "object" && !Array.isArray(v) ? stamp(v) : v]),
+  );
+  return { ...state, session: { ...state.session, payload } };
+}
+
 /** The big screen, exactly as the game draws it. `owner` shows the room owner's buttons. */
 export function DemoScreen({ state, owner = false }: { state: RoomStateResponse; owner?: boolean }) {
+  const [mountedAt] = useState(now);
   return (
     <div inert className="pointer-events-none flex w-full justify-center">
-      <StateView state={state} isOwner={owner} act={noop} onStart={() => {}} />
+      <StateView state={withFreshClocks(state, mountedAt)} isOwner={owner} act={noop} onStart={() => {}} />
     </div>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useState } from "react";
 import { Panel, TapedLabel } from "@/components/cartoon/Panel";
 import { Stamp, StampPop } from "@/components/cartoon/Stamp";
 import { RoughButton } from "@/components/cartoon/RoughButton";
 import { Mascot } from "@/components/cartoon/Mascot";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { sendAction } from "@/lib/gameClient";
 import type { RoomStateResponse, GameAction } from "@/lib/game/types";
 
@@ -22,22 +22,8 @@ export function CharadesActingView({
 }) {
   const { session, players } = state;
   const round = session!.payload.charadesRound;
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!round) return;
-    const start = new Date(round.actStart).getTime();
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - start) / 1000));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [round?.actStart]); // eslint-disable-line react-hooks/exhaustive-deps
-
   if (!round) return null;
   const actor = players.find((p) => p.id === round.actorId);
-
-  const remaining = Math.max(0, round.actSeconds - elapsed);
-  const pct = Math.max(0, 1 - elapsed / round.actSeconds);
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -53,23 +39,7 @@ export function CharadesActingView({
         <p className="font-hand mt-1 text-lg opacity-70">No speaking allowed!</p>
       </Panel>
 
-      <div className="w-full max-w-xs">
-        <div className="flex items-center justify-between">
-          <span className="font-score text-xs uppercase tracking-widest opacity-60">Time left</span>
-          <span className="font-score text-3xl tabular-nums" style={{ color: remaining < 10 ? "var(--coral)" : "var(--mustard)" }}>
-            {remaining}s
-          </span>
-        </div>
-        <div className="mt-1 h-4 rounded-full" style={{ background: "rgba(255,255,255,.15)" }}>
-          <motion.div
-            className="h-full rounded-full transition-all"
-            style={{
-              background: remaining < 10 ? "var(--coral)" : "var(--teal)",
-              width: `${pct * 100}%`,
-            }}
-          />
-        </div>
-      </div>
+      <PhaseTimerBar state={state} />
 
       <p className="font-hand text-xl opacity-70">Guesses coming in on phones…</p>
 
@@ -142,18 +112,6 @@ export function CharadesActPhone({ state }: { state: RoomStateResponse }) {
   const { session, me } = state;
   const round = session!.payload.charadesRound;
   const charadesWord = me?.charadesWord;
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!round) return;
-    const start = new Date(round.actStart).getTime();
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - start) / 1000));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [round?.actStart]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const remaining = round ? Math.max(0, round.actSeconds - elapsed) : 60;
 
   return (
     <div className="flex flex-col items-center gap-5 text-center">
@@ -169,9 +127,6 @@ export function CharadesActPhone({ state }: { state: RoomStateResponse }) {
         <p className="font-hand text-xl opacity-70">Loading your word…</p>
       )}
 
-      <p className="font-display text-4xl tabular-nums" style={{ color: remaining < 10 ? "var(--coral)" : "var(--mustard)" }}>
-        {remaining}s
-      </p>
       <p className="font-hand text-xl opacity-80">Act it out, no talking!</p>
     </div>
   );

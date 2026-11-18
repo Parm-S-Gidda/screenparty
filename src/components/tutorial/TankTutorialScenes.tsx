@@ -29,7 +29,7 @@ export function TankTutorialScene({ scene, hostMode }: SceneProps) {
       return <DemoPhone state={s} playerId="marcus" />;
     }
     case "invest": {
-      const s = demoState({ ...base, state: "TANK_INVESTING", payload: { tankRound: round }, progress: { tank: { investmentsIn: 0, investorsNeeded: 3 } } });
+      const s = demoState({ ...base, state: "TANK_INVESTING", payload: { tankRound: { ...round!, investStart: new Date().toISOString() } }, progress: { tank: { investmentsIn: 0, investorsNeeded: 3 } } });
       return (
         <PhoneRow>
           {["sam", "priya"].map((id, i) => <DemoPhone key={id} state={s} playerId={id} tilt={fan(i, 2)} delay={i * 0.12} />)}

@@ -1,23 +1,14 @@
 "use client";
 
+import { DoneCheck } from "@/components/cartoon/DoneCheck";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { AvatarBadge } from "@/components/game/AvatarBadge";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { playSfx, preloadSfx } from "@/lib/sfx";
 import type { GameAction, RoomStateResponse } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
-
-function useSecondsLeft(openedAt: string | undefined, totalSeconds: number | undefined): number | null {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!openedAt || !totalSeconds) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [openedAt, totalSeconds]);
-  if (!openedAt || !totalSeconds) return null;
-  return Math.max(0, Math.ceil(totalSeconds - (now - new Date(openedAt).getTime()) / 1000));
-}
 
 // Two Truths and a Lie, main screen views.
 
@@ -36,10 +27,6 @@ export function TtalCollectingView({ state }: { state: RoomStateResponse }) {
   const turnsPerRound = rounds > 0 ? (state.session?.questionCount ?? 0) / rounds : 0;
   const roundNumber =
     turnsPerRound > 0 ? Math.floor((state.session?.questionIndex ?? 0) / turnsPerRound) + 1 : 1;
-  const secondsLeft = useSecondsLeft(
-    state.session?.payload.collectingOpenedAt,
-    state.session?.settings.collectingSeconds
-  );
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -56,31 +43,13 @@ export function TtalCollectingView({ state }: { state: RoomStateResponse }) {
           Everyone scribbles their statements on their phones…
         </p>
       </div>
-      {secondsLeft !== null && (
-        <motion.div
-          key={secondsLeft <= 10 ? "urgent" : "normal"}
-          animate={secondsLeft <= 10 ? { scale: [1, 1.12, 1] } : {}}
-          transition={{ duration: 0.3 }}
-          className="font-score tabular-nums text-5xl md:text-6xl"
-          style={{ color: secondsLeft <= 10 ? "var(--destructive)" : "var(--muted-foreground)" }}
-        >
-          {secondsLeft}
-        </motion.div>
-      )}
+      <PhaseTimerBar state={state} />
       <div className="flex flex-wrap justify-center gap-4">
         {state.players.map((p) => (
           <div key={p.id} className="flex w-24 flex-col items-center gap-2">
             <div className="relative">
               <AvatarBadge avatarId={p.avatarId} size="lg" className={cn(!submitted.has(p.id) && "opacity-50")} />
-              {submitted.has(p.id) && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-sm text-white"
-                >
-                  ✓
-                </motion.span>
-              )}
+              {submitted.has(p.id) && <DoneCheck />}
             </div>
             <span className="max-w-24 truncate text-sm font-semibold">{p.username}</span>
           </div>
@@ -112,12 +81,6 @@ export function TtalVotingView({
   const subject = state.players.find((p) => p.id === round.subjectId);
   const ttal = state.ttal;
   const hasPlayerHost = state.players.some((p) => p.isHost);
-  // voting timer only shown in self mode (virtual mode is paced by reading)
-  const showVotingTimer = session.hostMode === "self";
-  const votingSecondsLeft = useSecondsLeft(
-    showVotingTimer ? round.votingOpenedAt : undefined,
-    showVotingTimer ? session.settings.autoSkipSeconds : undefined
-  );
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -151,6 +114,8 @@ export function TtalVotingView({
         ))}
       </div>
 
+      <PhaseTimerBar state={state} />
+
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-6">
           <p className="font-score text-xl uppercase tracking-wider tabular-nums text-muted-foreground">
@@ -162,17 +127,6 @@ export function TtalVotingView({
             </Button>
           )}
         </div>
-        {votingSecondsLeft !== null && (
-          <motion.p
-            key={votingSecondsLeft <= 5 ? "urgent" : "normal"}
-            animate={votingSecondsLeft <= 5 ? { scale: [1, 1.1, 1] } : {}}
-            transition={{ duration: 0.3 }}
-            className="font-score tabular-nums text-3xl"
-            style={{ color: votingSecondsLeft <= 5 ? "var(--destructive)" : "var(--muted-foreground)" }}
-          >
-            {votingSecondsLeft}s
-          </motion.p>
-        )}
       </div>
     </div>
   );

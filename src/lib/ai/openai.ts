@@ -12,6 +12,7 @@ export async function chatComplete(opts: {
   user: string;
   maxTokens?: number;
   temperature?: number;
+  timeoutMs?: number;
 }): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
@@ -32,7 +33,7 @@ export async function chatComplete(opts: {
         max_tokens: opts.maxTokens ?? 80,
         temperature: opts.temperature ?? 0.8,
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 8000),
     });
     if (!res.ok) {
       console.error("OpenAI error", res.status, await res.text());

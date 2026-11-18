@@ -87,6 +87,12 @@ export default async function DashboardPage({
           <span style={{ color: "var(--coral)" }}>{BRAND_NAME.slice(6)}</span>
         </Link>
         <nav aria-label="Dashboard" className="flex flex-wrap items-center gap-x-6">
+          <Link href="/store" className="link-label" style={{ color: "var(--cream)" }}>
+            Pack store
+          </Link>
+          <Link href="/store/library" className="link-label" style={{ color: "var(--cream)" }}>
+            My packs
+          </Link>
           <Link href="/account" className="link-label" style={{ color: "var(--cream)" }}>
             Account
           </Link>

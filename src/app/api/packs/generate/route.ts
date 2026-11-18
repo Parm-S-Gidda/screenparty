@@ -1,6 +1,6 @@
 // POST /api/packs/generate
 // Generate trivia questions using OpenAI and save them to a new custom pack.
-// Requires a paid plan (or AI_HOST_FREE_BETA). Tracked under ai_pack_gen metric.
+// Requires a paid plan. Tracked under ai_pack_gen metric.
 
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +10,6 @@ import { getUsage, trackUsage } from "@/lib/ai/usage";
 import { rateLimit } from "@/lib/rateLimit";
 import { containsBlockedWord } from "@/lib/moderation";
 import {
-  AI_HOST_FREE_BETA,
   CUSTOM_PACK_QUESTION_MAX,
   CUSTOM_PACK_TITLE_MAX,
   LIMITS,
@@ -52,21 +51,17 @@ export async function POST(request: NextRequest) {
   const tier = resolveTier(profile);
   const tierLimits = LIMITS[tier];
 
-  if (tierLimits.aiPackGenPerMonth === 0 && !AI_HOST_FREE_BETA)
+  if (tierLimits.aiPackGenPerMonth === 0)
     return err(403, "AI question generation requires a paid plan");
-
-  if (tierLimits.aiPackGenPerMonth > 0) {
-    const used = await getUsage(admin, user.id, "ai_pack_gen");
-    if (used >= tierLimits.aiPackGenPerMonth)
-      return err(403, "You've used all your AI pack generations this month");
-  }
+  if ((await getUsage(admin, user.id, "ai_pack_gen")) >= tierLimits.aiPackGenPerMonth)
+    return err(403, "You've used all your AI pack generations this month");
 
   const body = await request.json();
   const topic = String(body.topic ?? "").trim().slice(0, 100);
   if (!topic) return err(400, "Provide a topic");
   if (containsBlockedWord(topic)) return err(400, "Keep the topic friendly");
 
-  const count = QUESTION_COUNT_OPTIONS.includes(Number(body.count) as 5)
+  const count = QUESTION_COUNT_OPTIONS.includes(Number(body.count) as 5) && Number(body.count) <= tierLimits.maxQuestions
     ? Number(body.count)
     : 10;
   const difficulty: string = ["easy", "medium", "hard", "mixed"].includes(String(body.difficulty))
@@ -82,6 +77,7 @@ export async function POST(request: NextRequest) {
     user: `Topic: ${topic}\nCount: ${count}\n${difficultyLine}`,
     maxTokens: count * 120,
     temperature: 0.8,
+    timeoutMs: 30_000,
   });
 
   if (!raw) return err(502, "AI generation failed, try again");
@@ -130,9 +126,7 @@ export async function POST(request: NextRequest) {
     .insert(questions.map((q) => ({ pack_id: pack.id, ...q })));
   if (qErr) return err(500, qErr.message);
 
-  if (tierLimits.aiPackGenPerMonth > 0) {
-    await trackUsage(admin, user.id, "ai_pack_gen", 1);
-  }
+  await trackUsage(admin, user.id, "ai_pack_gen", 1);
 
   return Response.json({
     packId: pack.id,

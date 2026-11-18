@@ -11,9 +11,9 @@ import {
   endGame,
   GameError,
   isHostActor,
-  shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
@@ -55,7 +55,7 @@ async function handleStart(ctx: Ctx) {
     .from("mlt_prompts")
     .select("text");
   if (error || !rows || rows.length === 0) throw new GameError(500, "No prompts available");
-  const prompts = shuffle(rows.map((r) => r.text)).slice(0, count);
+  const prompts = themedPool(ctx.session.settings.aiPool, rows).map((r) => r.text).slice(0, count);
 
   await ctx.admin.from("scores").insert(
     players.map((p) => ({ session_id: ctx.session.id, player_id: p.id, score: 0 }))

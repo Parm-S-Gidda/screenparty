@@ -11,6 +11,7 @@ import { TtalConfigForm } from "@/components/TtalConfigForm";
 import { WyrConfigForm } from "@/components/WyrConfigForm";
 import { SimpleGameConfigForm } from "@/components/SimpleGameConfigForm";
 import { LIMITS, resolveTier } from "@/lib/constants";
+import { loadPacks, ownedPackOptions } from "@/lib/store";
 
 const SIMPLE_GAMES = ["mlt", "hol", "gtp", "tank", "charades", "num"] as const;
 
@@ -27,6 +28,8 @@ export default async function NewGamePage({
   const { game } = await searchParams;
 
   const admin = createAdminClient();
+  const storePacks = await loadPacks(admin, user.id);
+  const owned = (gameType: string) => ownedPackOptions(storePacks, gameType);
 
   const isSpecialGame = game === "ttal" || game === "wyr" || SIMPLE_GAMES.includes(game as typeof SIMPLE_GAMES[number]);
   if (isSpecialGame) {
@@ -37,8 +40,8 @@ export default async function NewGamePage({
       .single();
     const tier = resolveTier(gameProfile);
     if (game === "ttal") return <TtalConfigForm planTier={tier} />;
-    if (game === "wyr") return <WyrConfigForm planTier={tier} />;
-    return <SimpleGameConfigForm gameType={game!} planTier={tier} />;
+    if (game === "wyr") return <WyrConfigForm planTier={tier} ownedPacks={owned("wyr")} />;
+    return <SimpleGameConfigForm gameType={game!} planTier={tier} ownedPacks={owned(game!)} />;
   }
   const { data: packs } = await admin
     .from("question_packs")
@@ -67,6 +70,7 @@ export default async function NewGamePage({
       }))}
       planTier={tier}
       canAiGenerate={LIMITS[tier].aiPackGenPerMonth > 0}
+      ownedPacks={owned("buzz_trivia")}
     />
   );
 }

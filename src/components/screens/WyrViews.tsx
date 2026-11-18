@@ -1,5 +1,6 @@
 "use client";
 
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export function WyrChoosingView({
         </div>
         <OptionPanel side="b" text={round.optionB} />
       </div>
+      <PhaseTimerBar state={state} />
       <p className="font-hand text-2xl text-muted-foreground">
         Pick your side and call the majority on your phone!
       </p>

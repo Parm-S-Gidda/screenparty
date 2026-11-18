@@ -1,5 +1,6 @@
 "use client";
 
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, MotionConfig } from "framer-motion";
@@ -102,6 +103,7 @@ function PlayerScreenInner({ code, player }: { code: string; player: PlayerSessi
 
         <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col md:max-w-xl">
         <PlayerHeader state={state} player={player} />
+        {inGame && <PhaseTimerBar state={state} className="mt-3" />}
 
         <div className="relative z-10 flex flex-1 flex-col justify-center py-6">
           {session.state === "LOBBY" && (

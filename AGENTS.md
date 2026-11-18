@@ -22,7 +22,8 @@ utilities (`.panel`, `.panel-paper`, `.panel-grain`, `.btn-rough`, `.stamp`,
 (`--font-display`), Gochi Hand (`--font-hand`), Oswald (`--font-score`), loaded
 in `layout.tsx`. Reusable pieces live in `src/components/cartoon/` (Mascot with
 expressions, Panel/Tape/TapedLabel/RoundBanner, Stamp, Burst + doodle SVGs,
-TimerProp, RoughButton, PlayerStand). `AvatarBadge` renders the SVG Mascot.
+TimerBar + PhaseTimerBar (the one countdown line every game uses; durations/AI
+time-outs come from `src/lib/game/phaseTimer.ts`), RoughButton, PlayerStand). `AvatarBadge` renders the SVG Mascot.
 Dashboard/marketing pages must NOT get `.stage`. New game views should compose
 these primitives rather than styling from scratch.
 
@@ -35,7 +36,19 @@ buzzer. WYR: predictions target the other team's majority
 All 4 PRD build phases are implemented: core platform, self-hosted trivia, AI host
 (OpenAI lines + ElevenLabs voice + typed-answer judging, graceful fallbacks without
 keys), and Stripe subscriptions (checkout/portal/webhook, tier limits, usage dashboard).
-Env keys are optional and documented in `.env.local`. `AI_HOST_FREE_BETA` in
+AI themes (paid only, `aiPackGenPerMonth` quota): every setup screen has an
+"AI theme" panel (`AiThemeSection`). Trivia writes a saved pack via
+`/api/packs/generate`; the party games send `aiTopic` to `POST /api/rooms`,
+which generates rows shaped like the game's table (`src/lib/ai/gameContent.ts`)
+into `settings.aiPool`, and engines draw them first via `themedPool`. TTAL has
+none (players write their own). Pack store (`/store`, `/store/[slug]`, checkout, `/store/library`): one
+themed pack covers every game. `store_packs` (public catalog), `store_pack_items`
+(per-game rows in the game's own row shape, service-role only),
+`pack_purchases`. Owned packs are picked on each setup screen; trivia reads them
+via `packSource: "store"`, other games get the rows in `settings.aiPool`.
+Checkout records `status='test'` purchases (no Stripe yet) and is refused in
+production unless `STORE_TEST_CHECKOUT=true`. Demo packs (`is_demo`) are catalog
+filler with no content. Env keys are optional and documented in `.env.local`. `AI_HOST_FREE_BETA` in
 `src/lib/constants.ts` keeps the AI host free-tier accessible; flip to false to make it
 paid-only. Webhooks are testable offline: `node scripts/stripe-webhook-sign.mjs
 <user_id> <status> <verb>` emits a signed payload for `/api/billing/webhook` (secret
@@ -52,7 +65,9 @@ fake room state into the game's real screens.
 constants (`src/lib/constants.ts`), its settings, or its screens
 (`src/components/screens/*`), update that game's tutorial in the same change:**
 1. Re-read the game's script and fix any line the change made untrue; add or
-   adjust a `when`-gated step for a new setting.
+   adjust a `when`-gated step for a new setting. Mirror line edits in
+   `docs/tutorial-scripts/ALL_TUTORIAL_SCRIPTS.md`. Lines may use ElevenLabs v3
+   `[audio tags]` (spoken by `eleven_v3`, stripped from captions).
 2. Fix the scene's fake payloads if a `PublicPayload`/`RoomStateResponse` shape
    changed (`npx tsc` catches most of these), and recompute demo scores from
    the constants.

@@ -16,6 +16,7 @@ import {
   shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
@@ -29,6 +30,8 @@ export async function applyNumAction(ctx: Ctx, action: GameAction): Promise<void
       return handleSubmitExample(ctx, action.text);
     case "SUBMIT_NUM_GUESSES":
       return handleSubmitGuesses(ctx, action.guesses);
+    case "DRAFT_NUM_GUESS":
+      return handleDraftGuess(ctx, action.playerId, action.number);
     case "REVEAL_ROUND":
       return handleForceReveal(ctx);
     case "NEXT_ROUND":
@@ -67,7 +70,7 @@ async function handleStart(ctx: Ctx) {
   if (error || !rows || rows.length === 0) throw new GameError(500, "No themes available");
 
   const count = players.length; // one round per player (each is guesser once)
-  const themes = shuffle(rows).slice(0, count).map((r) => ({
+  const themes = themedPool(ctx.session.settings.aiPool, rows).slice(0, count).map((r) => ({
     theme: r.theme,
     scaleLow: r.scale_low,
     scaleHigh: r.scale_high,
@@ -221,6 +224,33 @@ async function handleSubmitGuesses(
   }
 
   await revealRound(ctx);
+}
+
+// Live slider position, so the big screen can follow the guesser's thumb.
+// Not scored: SUBMIT_NUM_GUESSES is still the only thing that counts.
+async function handleDraftGuess(ctx: Ctx, examplePlayerId: string, number: number) {
+  if (ctx.actor.kind !== "player") throw new GameError(403, "Only players can guess");
+  assertState(ctx.session, ["NUM_GUESSING"]);
+  const guesserOrder = ctx.session.settings.numGuesserOrder ?? [];
+  if (ctx.actor.playerId !== guesserOrder[ctx.session.current_question_index])
+    throw new GameError(403, "Only the guesser places examples this round");
+  if (!Number.isInteger(number) || number < 1 || number > 10)
+    throw new GameError(400, "Numbers must be integers 1–10");
+
+  const payload = ctx.session.public_payload;
+  const guessing = payload.numGuessing;
+  if (!guessing?.examples.some((e) => e.playerId === examplePlayerId))
+    throw new GameError(400, "Unknown example");
+
+  await updateSession(ctx, {
+    public_payload: {
+      ...payload,
+      numGuessing: {
+        ...guessing,
+        live: { activeId: examplePlayerId, guesses: { ...guessing.live?.guesses, [examplePlayerId]: number } },
+      },
+    },
+  });
 }
 
 async function handleForceReveal(ctx: Ctx) {

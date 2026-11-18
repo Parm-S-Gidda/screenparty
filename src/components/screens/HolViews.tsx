@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Panel, TapedLabel } from "@/components/cartoon/Panel";
 import { Stamp, StampPop } from "@/components/cartoon/Stamp";
 import { RoughButton } from "@/components/cartoon/RoughButton";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { sendAction } from "@/lib/gameClient";
 import type { RoomStateResponse, GameAction } from "@/lib/game/types";
 
@@ -56,6 +57,8 @@ export function HolVotingView({
           <span className="font-score rounded-lg border-2 border-dashed border-[#221f30]/40 px-3 py-1 text-xl" style={{ color: "#221f30" }}>?</span>
         </Panel>
       </div>
+
+      <PhaseTimerBar state={state} />
 
       <div className="font-hand text-xl opacity-70">{voted} / {total} voted</div>
 

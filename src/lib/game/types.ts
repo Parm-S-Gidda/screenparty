@@ -37,7 +37,10 @@ export type Difficulty = "easy" | "medium" | "hard" | "mixed";
 
 export type GameSettings = {
   packId: string;
-  packSource?: "builtin" | "custom"; // defaults to "builtin" when absent
+  packSource?: "builtin" | "custom" | "store"; // defaults to "builtin" when absent
+  // store pack the host picked (owned); trivia reads it via packSource "store",
+  // the other games get its rows in aiPool
+  storePackId?: string;
   questionCount: number;
   difficulty: Difficulty;
   hostMode: "self" | "virtual";
@@ -50,6 +53,10 @@ export type GameSettings = {
   hostPersonality?: "pro" | "neutral" | "comedian" | "unhinged";
   // play the how-to-play tutorial before round 1 (absent on old rooms = on)
   tutorial?: boolean;
+  // AI theme (paid): the host's topic and the generated rows, shaped like the
+  // game's own table rows; engines draw from these first (see themedPool)
+  aiTopic?: string;
+  aiPool?: Record<string, string | number>[];
   // two truths and a lie
   variation?: "two_truths" | "two_lies";
   subjectOrder?: string[];
@@ -191,6 +198,7 @@ export type PublicPayload = {
     tagline: string;
     pitchStart: string;
     pitchSeconds: number;
+    investStart?: string; // set when investing opens (AI host times it)
   };
   tankReveal?: {
     pitcherId: string;
@@ -225,6 +233,8 @@ export type PublicPayload = {
   numGuessing?: {
     examples: { playerId: string; exampleText: string }[];
     openedAt: string;
+    // the guesser's slider positions as they drag, mirrored on the big screen
+    live?: { activeId: string; guesses: Record<string, number> };
   };
   numReveal?: {
     guesserPlayerId: string;
@@ -275,7 +285,8 @@ export type GameAction =
   | { type: "SUBMIT_CHARADES_GUESS"; text: string }
   // number rating game
   | { type: "SUBMIT_NUM_EXAMPLE"; text: string }
-  | { type: "SUBMIT_NUM_GUESSES"; guesses: { playerId: string; number: number }[] };
+  | { type: "SUBMIT_NUM_GUESSES"; guesses: { playerId: string; number: number }[] }
+  | { type: "DRAFT_NUM_GUESS"; playerId: string; number: number };
 
 export type GameActionType = GameAction["type"];
 

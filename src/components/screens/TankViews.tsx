@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Panel, TapedLabel } from "@/components/cartoon/Panel";
 import { Stamp, StampPop } from "@/components/cartoon/Stamp";
 import { RoughButton } from "@/components/cartoon/RoughButton";
 import { Mascot } from "@/components/cartoon/Mascot";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { Burst } from "@/components/cartoon/Doodles";
 import { sendAction } from "@/lib/gameClient";
 import type { RoomStateResponse, GameAction } from "@/lib/game/types";
@@ -23,23 +23,8 @@ export function TankPitchingView({
 }) {
   const { session, players } = state;
   const tankRound = session!.payload.tankRound;
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!tankRound) return;
-    const start = new Date(tankRound.pitchStart).getTime();
-    const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - start) / 1000));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [tankRound?.pitchStart]); // eslint-disable-line react-hooks/exhaustive-deps
-
   if (!tankRound) return null;
   const pitcher = players.find((p) => p.id === tankRound.pitcherId);
-  const pitchSeconds = tankRound.pitchSeconds;
-
-  const remaining = Math.max(0, pitchSeconds - elapsed);
-  const pct = Math.max(0, 1 - elapsed / pitchSeconds);
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -57,22 +42,7 @@ export function TankPitchingView({
         <p className="font-hand mt-2 text-xl leading-snug" style={{ color: "#4a4460" }}>{tankRound.tagline}</p>
       </Panel>
 
-      {/* Timer bar */}
-      <div className="w-full max-w-xs">
-        <div className="flex items-center justify-between">
-          <span className="font-score text-xs uppercase tracking-widest opacity-60">Time</span>
-          <span className="font-score text-2xl tabular-nums" style={{ color: remaining < 10 ? "var(--coral)" : "var(--mustard)" }}>
-            {remaining}s
-          </span>
-        </div>
-        <div className="mt-1 h-3 rounded-full" style={{ background: "rgba(255,255,255,.15)" }}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: remaining < 10 ? "var(--coral)" : "var(--mustard)", width: `${pct * 100}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-      </div>
+      <PhaseTimerBar state={state} />
 
       {isOwner && (
         <RoughButton onClick={() => act({ type: "REVEAL_ROUND" })} className="px-8 py-3 text-xl">
@@ -117,6 +87,8 @@ export function TankInvestingView({
       <p className="font-display text-4xl uppercase" style={{ color: "var(--mustard)" }}>
         Do you invest?
       </p>
+
+      <PhaseTimerBar state={state} />
 
       <div className="font-hand text-xl opacity-70">{investmentsIn} / {investorsNeeded} voted</div>
 

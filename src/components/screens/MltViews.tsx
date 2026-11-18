@@ -1,25 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { DoneCheck } from "@/components/cartoon/DoneCheck";
 import { motion, AnimatePresence } from "framer-motion";
 import { Panel, TapedLabel } from "@/components/cartoon/Panel";
 import { Stamp, StampPop } from "@/components/cartoon/Stamp";
 import { RoughButton } from "@/components/cartoon/RoughButton";
 import { Mascot } from "@/components/cartoon/Mascot";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import { Burst } from "@/components/cartoon/Doodles";
 import { sendAction } from "@/lib/gameClient";
 import type { RoomStateResponse, GameAction } from "@/lib/game/types";
-
-function useSecondsLeft(openedAt: string | undefined, totalSeconds: number | undefined): number | null {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!openedAt || !totalSeconds) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [openedAt, totalSeconds]);
-  if (!openedAt || !totalSeconds) return null;
-  return Math.max(0, Math.ceil(totalSeconds - (now - new Date(openedAt).getTime()) / 1000));
-}
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -27,12 +17,10 @@ export function MltVotingView({
   state,
   isOwner,
   act,
-  speaking,
 }: {
   state: RoomStateResponse;
   isOwner: boolean;
   act: (a: GameAction) => Promise<void>;
-  speaking?: boolean;
 }) {
   const { session, players, mlt } = state;
   const payload = session!.payload;
@@ -41,13 +29,6 @@ export function MltVotingView({
   const total = players.length;
   const voted = submittedIds.size;
   const isVirtual = session!.hostMode === "virtual";
-  const totalSeconds = session!.settings.autoSkipSeconds;
-  const secondsLeft = useSecondsLeft(
-    speaking ? undefined : payload.mltRound?.openedAt,
-    totalSeconds
-  );
-  const pct = secondsLeft !== null ? (secondsLeft / totalSeconds) * 100 : 100;
-  const urgent = secondsLeft !== null && secondsLeft <= 5;
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
@@ -60,21 +41,7 @@ export function MltVotingView({
         </p>
       </Panel>
 
-      {secondsLeft !== null && (
-        <div className="w-full max-w-3xl px-2">
-          <div
-            className="relative h-3 w-full overflow-hidden rounded-full"
-            style={{ background: "rgba(255,255,255,0.15)" }}
-          >
-            <motion.div
-              className="absolute left-0 top-0 h-full rounded-full"
-              style={{ background: urgent ? "var(--destructive)" : "var(--mustard)", width: `${pct}%` }}
-              transition={{ duration: 0.5, ease: "linear" }}
-            />
-          </div>
-          <div className="mt-1 text-center font-hand text-sm opacity-50">{secondsLeft}s</div>
-        </div>
-      )}
+      <PhaseTimerBar state={state} />
 
       <div className="font-hand text-xl opacity-70">
         {voted} / {total} voted
@@ -92,7 +59,7 @@ export function MltVotingView({
               <Mascot avatarId={p.avatarId} size={52} animate={false} />
               <span className="font-hand text-sm" style={{ color: "var(--cream)" }}>{p.username}</span>
               {submittedIds.has(p.id) && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs" style={{ background: "var(--teal)", color: "#fff" }}>✓</span>
+                <DoneCheck />
               )}
             </motion.div>
           ))}

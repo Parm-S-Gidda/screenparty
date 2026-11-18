@@ -9,17 +9,6 @@ import type { RoomStateResponse } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
 import { oddLabel } from "./TtalMainViews";
 
-function useSecondsLeft(openedAt: string | undefined, totalSeconds: number | undefined): number | null {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!openedAt || !totalSeconds) return;
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, [openedAt, totalSeconds]);
-  if (!openedAt || !totalSeconds) return null;
-  return Math.max(0, Math.ceil(totalSeconds - (now - new Date(openedAt).getTime()) / 1000));
-}
-
 const LETTERS = ["A", "B", "C"];
 
 // Phone: write your two truths and a lie (or two lies and a truth). The slots
@@ -38,10 +27,6 @@ export function TtalStatementForm({
   const [statements, setStatements] = useState(["", "", ""]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const secondsLeft = useSecondsLeft(
-    state.session?.payload.collectingOpenedAt,
-    state.session?.settings.collectingSeconds
-  );
 
   const slots = twoLies
     ? [
@@ -98,17 +83,6 @@ export function TtalStatementForm({
               : "Write two truths and one lie, they'll be shuffled before anyone sees them."}
           </p>
         </div>
-        {secondsLeft !== null && (
-          <motion.span
-            key={secondsLeft <= 10 ? "urgent" : "normal"}
-            animate={secondsLeft <= 10 ? { scale: [1, 1.15, 1] } : {}}
-            transition={{ duration: 0.3 }}
-            className="font-score ml-3 shrink-0 tabular-nums text-3xl"
-            style={{ color: secondsLeft <= 10 ? "var(--destructive)" : "var(--muted-foreground)" }}
-          >
-            {secondsLeft}
-          </motion.span>
-        )}
       </div>
 
       {slots.map((slot, i) => (
@@ -163,11 +137,6 @@ export function TtalVotePanel({
   const round = session.payload.ttalRound;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const showVotingTimer = session.hostMode === "self";
-  const votingSecondsLeft = useSecondsLeft(
-    showVotingTimer ? round?.votingOpenedAt : undefined,
-    showVotingTimer ? session.settings.autoSkipSeconds : undefined
-  );
   if (!round) return null;
 
   const isSubject = state.me?.playerId === round.subjectId;
@@ -209,17 +178,6 @@ export function TtalVotePanel({
         <p className="font-display text-2xl uppercase tracking-wide">
           Which one is the {oddLabel(state)}?
         </p>
-        {votingSecondsLeft !== null && (
-          <motion.span
-            key={votingSecondsLeft <= 5 ? "urgent" : "normal"}
-            animate={votingSecondsLeft <= 5 ? { scale: [1, 1.15, 1] } : {}}
-            transition={{ duration: 0.3 }}
-            className="font-score ml-2 shrink-0 tabular-nums text-2xl"
-            style={{ color: votingSecondsLeft <= 5 ? "var(--destructive)" : "var(--muted-foreground)" }}
-          >
-            {votingSecondsLeft}s
-          </motion.span>
-        )}
       </div>
       {round.statements.map((s, i) => (
         <button

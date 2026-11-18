@@ -79,6 +79,18 @@ but need distinct ids (`welcome` / `welcome_lies`). Keep variants to a step or
 two, and prefer wording that holds for any numeric setting ("fewer points")
 over a clip per value. Clips use `ELEVENLABS_VOICE_ID`, not personality voices.
 
+## Voice lines, audio tags and rewrites
+
+Lines may carry ElevenLabs v3 audio tags such as `[excited]` or `[whispers]`.
+The voice script always uses `eleven_v3`, which performs them (older models
+read them aloud), and `captionText()` strips them from the on-screen caption.
+Keep tags to a few lowercase words, 0 to 2 per line.
+
+`docs/tutorial-scripts/ALL_TUTORIAL_SCRIPTS.md` is the copy-editable version of
+every line, with what's on screen and the rules each line must keep, and
+`CHATGPT_PROMPT.md` is the prompt used to rewrite them. After editing lines in
+`src/lib/tutorials.ts`, update that file to match.
+
 ## Status
 
 | Game (`gameType`) | Settings branches |

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchHostLine, sendAction } from "@/lib/gameClient";
 import type { GameAction, RoomStateResponse } from "@/lib/game/types";
+import { phaseTimer } from "@/lib/game/phaseTimer";
 import type { HostMoment } from "@/lib/ai/hostLines";
 
 // VirtualHostController (PRD §11): in AI-hosted games the room owner's main
@@ -205,9 +206,9 @@ function deriveTtalCue(state: RoomStateResponse): Cue | null {
     case "VOTING": {
       const round = payload.ttalRound;
       if (!round) return null;
-      // Introduce the subject, then read their statements. After reading the
-      // driver fires REVEAL_ROUND — the server won't auto-reveal in virtual
-      // mode, so this guarantees nobody's screen jumps to results mid-read.
+      // Introduce the subject, then read their statements. The voting clock
+      // (or everyone voting) reveals, never mid-read: the server won't
+      // auto-reveal in virtual mode and the safety net waits for the host.
       return {
         key: `ttal-subject:${session.questionIndex}:${round.subjectId}`,
         moments: [
@@ -217,8 +218,6 @@ function deriveTtalCue(state: RoomStateResponse): Cue | null {
             statementId: s.id,
           })),
         ],
-        action: { type: "REVEAL_ROUND" as const },
-        pauseMs: 2000, // brief beat for last-minute votes after reading finishes
       };
     }
     case "REVEAL":
@@ -562,9 +561,11 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
     skipRef.current?.();
   }, [enabled, state?.session?.state]);
 
-  // Safety nets so an idle player can't stall the game: a buzzed player who
-  // never answers gets skipped; a TTAL vote that never completes gets
-  // force-revealed once at least one vote is in.
+  // Safety nets so an idle player can't stall the game: every timed phase
+  // moves on when its on-screen clock (phaseTimer) runs out, a buzzed player
+  // who never answers gets skipped, and a TTAL vote closes once everyone's in.
+  // Deadlines come from the phase's openedAt, so refetches never restart them;
+  // the host never gets cut off mid-line (it waits for the line to finish).
   useEffect(() => {
     if (answerTimeout.current) {
       clearTimeout(answerTimeout.current);
@@ -572,90 +573,34 @@ export function useVirtualHostDriver(code: string, state: RoomStateResponse | nu
     }
     if (!enabled || !state?.session) return;
     const session = state.session;
-    const waitMs = (session.settings.autoSkipSeconds + 15) * 1000;
+    const fire = (action: GameAction, delayMs: number) => {
+      answerTimeout.current = setTimeout(() => {
+        if (runningRef.current) return; // re-armed when `speaking` flips back
+        void sendAction(code, action).catch(() => {});
+      }, Math.max(delayMs, 500));
+    };
 
     if (session.gameType === "buzz_trivia" && session.state === "PLAYER_BUZZED") {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "SKIP_QUESTION" }).catch(() => {});
-      }, waitMs);
-    } else if (session.gameType === "ttal" && session.state === "COLLECTING") {
-      const collectMs = (session.settings.collectingSeconds ?? 90) * 1000;
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "FORCE_COLLECT_DONE" }).catch(() => {});
-      }, collectMs);
+      fire({ type: "SKIP_QUESTION" }, (session.settings.autoSkipSeconds + 15) * 1000);
     } else if (
       session.gameType === "ttal" &&
       session.state === "VOTING" &&
-      (state.ttal?.votesIn ?? 0) > 0
+      state.ttal &&
+      state.ttal.votersNeeded > 0 &&
+      state.ttal.votesIn >= state.ttal.votersNeeded
     ) {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, waitMs);
-    } else if (session.gameType === "wyr" && session.state === "WYR_CHOOSING") {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, waitMs);
-    } else if (session.gameType === "mlt" && session.state === "MLT_VOTING") {
-      const openedAt = session.payload.mltRound?.openedAt;
-      if (openedAt) {
-        const elapsed = Date.now() - new Date(openedAt).getTime();
-        const remaining = Math.max(session.settings.autoSkipSeconds * 1000 - elapsed, 500);
-        answerTimeout.current = setTimeout(() => {
-          void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-        }, remaining);
+      fire({ type: "REVEAL_ROUND" }, 1500); // the server doesn't auto-reveal in virtual mode
+    } else {
+      const timer = phaseTimer(session);
+      if (timer?.onExpire) {
+        const elapsed = Date.now() - new Date(timer.openedAt).getTime();
+        fire(timer.onExpire, timer.seconds * 1000 - elapsed);
       }
-    } else if (
-      session.gameType === "hol" &&
-      session.state === "HOL_VOTING" &&
-      (state.hol?.submittedVoterIds.length ?? 0) > 0
-    ) {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, 40_000);
-    } else if (
-      session.gameType === "gtp" &&
-      session.state === "GTP_GUESSING" &&
-      (state.gtp?.guessesIn ?? 0) > 0
-    ) {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, 45_000);
-    } else if (
-      session.gameType === "tank" &&
-      session.state === "TANK_INVESTING" &&
-      (state.tank?.investmentsIn ?? 0) > 0
-    ) {
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, 45_000);
-    } else if (
-      session.gameType === "num" &&
-      ((session.state === "NUM_SUBMITTING" && (state.num?.submittedExampleIds.length ?? 0) > 0) ||
-        session.state === "NUM_GUESSING")
-    ) {
-      // an idle writer or guesser can't stall the AI host: move on with what's in.
-      // Timed from the phase's openedAt so state refetches don't restart the clock.
-      const submitting = session.state === "NUM_SUBMITTING";
-      const openedAt = submitting ? session.payload.numRound?.openedAt : session.payload.numGuessing?.openedAt;
-      const limitMs = submitting ? 90_000 : 75_000;
-      const elapsed = openedAt ? Date.now() - new Date(openedAt).getTime() : 0;
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, Math.max(limitMs - elapsed, 500));
-    } else if (
-      session.gameType === "charades" &&
-      session.state === "CHARADES_ACTING"
-    ) {
-      // Auto-end after the acting timer plus a buffer
-      const actSeconds = session.payload.charadesRound?.actSeconds ?? 60;
-      answerTimeout.current = setTimeout(() => {
-        void sendAction(code, { type: "REVEAL_ROUND" }).catch(() => {});
-      }, (actSeconds + 8) * 1000);
     }
     return () => {
       if (answerTimeout.current) clearTimeout(answerTimeout.current);
     };
-  }, [enabled, code, state]);
+  }, [enabled, code, state, speaking]);
 
   const skip = useCallback(() => skipRef.current?.(), []);
 

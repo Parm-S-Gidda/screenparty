@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CaptionBar } from "@/components/game/CaptionBar";
 import { duckMusic } from "@/lib/sfx";
-import { tutorialClipUrl, type TutorialHostMode, type TutorialSettings, type TutorialStep } from "@/lib/tutorials";
+import { captionText, tutorialClipUrl, type TutorialHostMode, type TutorialSettings, type TutorialStep } from "@/lib/tutorials";
 import type { SceneProps } from "./demo";
 import { NumTutorialScene } from "./NumTutorialScenes";
 import { TriviaTutorialScene } from "./TriviaTutorialScenes";
@@ -80,7 +80,7 @@ export function TutorialPlayer({
     // missing clip or blocked autoplay: hold the caption for a reading-speed beat
     const fallback = () => {
       clearTimeout(timer);
-      timer = setTimeout(next, Math.min(Math.max(step.line.length * 60, 2500), 10000));
+      timer = setTimeout(next, Math.min(Math.max(captionText(step.line).length * 60, 2500), 10000));
     };
     skipLine.current = next;
     audio.onended = next;
@@ -135,7 +135,7 @@ export function TutorialPlayer({
         </motion.div>
       </AnimatePresence>
 
-      <CaptionBar caption={step.line} onSkip={() => skipLine.current?.()} label={hostMode === "virtual" ? "the host" : "the announcer"} />
+      <CaptionBar caption={captionText(step.line)} onSkip={() => skipLine.current?.()} label={hostMode === "virtual" ? "the host" : "the announcer"} />
     </div>
   );
 }

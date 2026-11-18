@@ -30,8 +30,9 @@ for (const [gameType, modes] of Object.entries(TUTORIALS)) {
         headers: { "xi-api-key": apiKey, "content-type": "application/json" },
         body: JSON.stringify({
           text: step.line,
-          model_id: process.env.ELEVENLABS_MODEL_ID ?? "eleven_turbo_v2_5",
-          voice_settings: { stability: 0.6, similarity_boost: 0.75, style: 0.35 },
+          // v3 performs the [audio tags] in the lines; older models read them aloud
+          model_id: "eleven_v3",
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
         }),
       });
       if (!res.ok) {

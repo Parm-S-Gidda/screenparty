@@ -15,11 +15,13 @@ import {
   shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
 const MIN_PLAYERS = 2;
-const ACT_SECONDS = 60;
+// acting gets twice the room's answer time (default 30s -> 60s)
+const actSeconds = (ctx: Ctx) => (ctx.session.settings.autoSkipSeconds || 30) * 2;
 
 export async function applyCharadesAction(ctx: Ctx, action: GameAction): Promise<void> {
   switch (action.type) {
@@ -59,7 +61,7 @@ async function handleStart(ctx: Ctx) {
     throw new GameError(500, "Not enough words available");
 
   const actorOrder = shuffle(players.map((p) => p.id));
-  const pickedWords = shuffle(rows).slice(0, players.length);
+  const pickedWords = themedPool(ctx.session.settings.aiPool, rows).slice(0, players.length);
   const charadesWords = actorOrder.map((actorId, i) => ({
     actorId,
     word: pickedWords[i].word,
@@ -76,7 +78,7 @@ async function handleStart(ctx: Ctx) {
       actorId: first.actorId,
       category: first.category,
       actStart: new Date().toISOString(),
-      actSeconds: ACT_SECONDS,
+      actSeconds: actSeconds(ctx),
     },
   };
   await updateSession(ctx, {
@@ -202,7 +204,7 @@ async function handleNextRound(ctx: Ctx) {
       actorId: next_.actorId,
       category: next_.category,
       actStart: new Date().toISOString(),
-      actSeconds: ACT_SECONDS,
+      actSeconds: actSeconds(ctx),
     },
   };
   await updateSession(ctx, {

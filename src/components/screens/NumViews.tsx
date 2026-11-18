@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
+import { DoneCheck } from "@/components/cartoon/DoneCheck";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Panel } from "@/components/cartoon/Panel";
 import { Stamp } from "@/components/cartoon/Stamp";
@@ -23,6 +25,7 @@ export function NumScale({
   high,
   size = "lg",
   markers = [],
+  pointer,
   className,
 }: {
   theme: string;
@@ -30,6 +33,8 @@ export function NumScale({
   high: string;
   size?: "lg" | "md";
   markers?: ScaleMarker[];
+  /** live slider: the guesser's mascot riding a triangle above the ruler */
+  pointer?: { n: number; avatarId: string };
   className?: string;
 }) {
   const lg = size === "lg";
@@ -38,7 +43,19 @@ export function NumScale({
       <p className={cn("font-display uppercase leading-[0.95]", lg ? "text-5xl md:text-6xl" : "text-3xl md:text-4xl")} style={{ color: "var(--ink)" }}>
         {theme}
       </p>
-      <div className={cn("relative", markers.length ? "mt-16" : "mt-5")}>
+      <div className={cn("relative", pointer ? "mt-24" : markers.length ? "mt-16" : "mt-5")}>
+        {pointer && (
+          <motion.div
+            aria-hidden
+            initial={false}
+            animate={{ left: `${(pointer.n - 0.5) * 10}%` }}
+            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+            className="absolute bottom-full mb-1 flex -translate-x-1/2 flex-col items-center"
+          >
+            <Mascot avatarId={pointer.avatarId} size={60} animate={false} />
+            <span className="h-0 w-0 border-x-[13px] border-t-[16px] border-x-transparent" style={{ borderTopColor: "var(--ink)" }} />
+          </motion.div>
+        )}
         {markers.map((m, i) => (
           <motion.span
             key={`${m.label}-${i}`}
@@ -134,6 +151,7 @@ export function NumSubmittingView({
     <div className="flex w-full flex-col items-center gap-8">
       <GuesserTag avatarId={guesser?.avatarId} name={guesser?.username} line="the guesser" />
       <NumScale theme={round.theme} low={round.scaleLow} high={round.scaleHigh} />
+      <PhaseTimerBar state={state} />
 
       <div className="flex flex-col items-center gap-4">
         <p className="font-hand text-2xl" style={{ color: "var(--cream-muted)" }}>
@@ -148,11 +166,7 @@ export function NumSubmittingView({
                 <span className="font-hand text-lg" style={{ color: done ? "var(--cream)" : "var(--cream-muted)" }}>
                   {p.username}
                 </span>
-                {done && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={pop} className="chip absolute -right-2 -top-1" style={{ background: "var(--teal)", color: "var(--ink)" }}>
-                    in
-                  </motion.span>
-                )}
+                {done && <DoneCheck />}
               </div>
             );
           })}
@@ -181,28 +195,51 @@ export function NumGuessingView({
   if (!round || !guessing) return null;
 
   const guesser = players.find((p) => p.id === round.guesserPlayerId);
+  const live = guessing.live;
+  const active = guessing.examples.find((ex) => ex.playerId === live?.activeId);
 
   return (
-    <div className="flex w-full flex-col items-center gap-7">
+    <div className="flex w-full flex-col items-center gap-6">
       <GuesserTag avatarId={guesser?.avatarId} name={guesser?.username} line="is placing these" />
-      <p className="font-display text-center text-3xl uppercase" style={{ color: "var(--cream)" }}>
-        {round.theme}
-        <span className="font-hand block text-xl normal-case" style={{ color: "var(--cream-muted)" }}>
-          1 = {round.scaleLow} · 10 = {round.scaleHigh}
-        </span>
-      </p>
+      <NumScale
+        theme={round.theme}
+        low={round.scaleLow}
+        high={round.scaleHigh}
+        size="md"
+        pointer={active && live && guesser ? { n: live.guesses[active.playerId], avatarId: guesser.avatarId } : undefined}
+      />
+      <PhaseTimerBar state={state} />
 
       {/* authors stay hidden until the reveal: the guesser can see this screen */}
       <div className="grid w-full max-w-4xl gap-4 sm:grid-cols-2">
-        {guessing.examples.map((ex, i) => (
-          <motion.div key={ex.playerId} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ ...pop, delay: Math.min(i, 5) * 0.06 }}>
-            <div className="panel-paper flex min-h-24 items-center justify-center px-6 py-4 text-center" style={{ transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)` }}>
-              <p className="font-hand text-3xl leading-tight" style={{ color: "var(--ink)" }}>
-                &ldquo;{ex.exampleText}&rdquo;
-              </p>
-            </div>
-          </motion.div>
-        ))}
+        {guessing.examples.map((ex, i) => {
+          const placed = live?.guesses[ex.playerId];
+          const isActive = ex.playerId === live?.activeId;
+          return (
+            <motion.div key={ex.playerId} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: isActive ? 1.03 : 1 }} transition={{ ...pop, delay: Math.min(i, 5) * 0.06 }} className="relative">
+              <div
+                className="panel-paper flex min-h-24 items-center justify-center px-6 py-4 text-center"
+                style={{ transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)`, outline: isActive ? "4px solid var(--mustard)" : undefined, outlineOffset: 3 }}
+              >
+                <p className="font-hand text-3xl leading-tight" style={{ color: "var(--ink)" }}>
+                  &ldquo;{ex.exampleText}&rdquo;
+                </p>
+              </div>
+              {placed !== undefined && (
+                <motion.span
+                  key={placed}
+                  initial={{ scale: 0.6 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 600, damping: 18 }}
+                  className="font-display absolute -right-3 -top-3 flex h-12 w-12 items-center justify-center rounded-full border-[3px] text-2xl tabular-nums"
+                  style={{ borderColor: "var(--ink)", background: isActive ? "var(--mustard)" : "var(--ink)", color: isActive ? "var(--ink)" : "var(--cream)", boxShadow: "2px 2px 0 rgba(0,0,0,0.4)" }}
+                >
+                  {placed}
+                </motion.span>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {isOwner && session!.hostMode === "self" && (
@@ -336,9 +373,13 @@ export function NumSubmitPhone({
   const [error, setError] = useState<string | null>(null);
 
   if (isGuesser) {
+    const avatarId = state.players.find((p) => p.id === me?.playerId)?.avatarId ?? "";
     return (
-      <div className="flex flex-col items-center gap-5 text-center">
-        <Stamp color="mustard" size="lg">You&apos;re the guesser</Stamp>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Mascot avatarId={avatarId} expression="buzzed" size={110} />
+        <p className="font-display text-4xl uppercase leading-tight" style={{ color: "var(--mustard)" }}>
+          You&apos;re the guesser
+        </p>
         <PhoneTheme theme={round?.theme} low={round?.scaleLow} high={round?.scaleHigh} />
         <p className="font-hand text-xl" style={{ color: "var(--cream-muted)" }}>
           Everyone&apos;s writing hints for you. Look innocent.
@@ -372,14 +413,15 @@ export function NumSubmitPhone({
     <div className="flex flex-col gap-5">
       <PhoneTheme theme={round?.theme} low={round?.scaleLow} high={round?.scaleHigh} />
 
-      <div className="flex flex-col items-center">
-        <p className="font-score text-xs uppercase tracking-[0.2em]" style={{ color: "var(--cream-muted)" }}>
-          your secret number
+      <Panel tilt={-1} className="mx-auto flex w-40 flex-col items-center gap-1 px-4 pb-3 pt-3">
+        <p className="font-score text-xs uppercase tracking-[0.2em]" style={{ color: "var(--ink-label)" }}>
+          Your secret number
         </p>
-        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 600, damping: 18 }} className="font-display text-8xl leading-none tabular-nums" style={{ color: "var(--mustard)" }}>
+        {/* Luckiest Guy's caps overflow a tight line box, so give it room */}
+        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 600, damping: 18 }} className="font-display pt-2 text-7xl leading-[1.1] tabular-nums" style={{ color: "var(--ink)" }}>
           {myNumber ?? "?"}
         </motion.span>
-      </div>
+      </Panel>
 
       <label className="flex flex-col gap-2">
         <span className="font-hand text-lg" style={{ color: "var(--cream)" }}>
@@ -421,6 +463,26 @@ export function NumGuessPhone({
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Live mirror for the big screen: one request in flight, newest position wins,
+  // at most one every 500ms (the action route allows 30 per 10s per player).
+  const draft = useRef<{ next: { playerId: string; number: number } | null; busy: boolean }>({ next: null, busy: false });
+
+  function sendDraft(playerId: string, number: number) {
+    draft.current.next = { playerId, number };
+    if (draft.current.busy) return;
+    draft.current.busy = true;
+    void (async () => {
+      while (draft.current.next) {
+        const d = draft.current.next;
+        draft.current.next = null;
+        await Promise.all([
+          sendAction(code, { type: "DRAFT_NUM_GUESS", ...d }, token).catch(() => {}),
+          new Promise((r) => setTimeout(r, 500)),
+        ]);
+      }
+      draft.current.busy = false;
+    })();
+  }
 
   if (!isGuesser) {
     const name = players.find((p) => p.id === round?.guesserPlayerId)?.username ?? "The guesser";
@@ -482,7 +544,11 @@ export function NumGuessPhone({
                   step={1}
                   value={val ?? 5}
                   aria-label={`Number for ${ex.exampleText}`}
-                  onChange={(e) => setGuesses((prev) => ({ ...prev, [ex.playerId]: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setGuesses((prev) => ({ ...prev, [ex.playerId]: n }));
+                    sendDraft(ex.playerId, n);
+                  }}
                   className="h-11 flex-1 accent-[var(--ink)]"
                 />
                 <span

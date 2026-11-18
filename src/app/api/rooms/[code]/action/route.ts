@@ -56,6 +56,7 @@ const ACTION_TYPES = [
   // number rating game
   "SUBMIT_NUM_EXAMPLE",
   "SUBMIT_NUM_GUESSES",
+  "DRAFT_NUM_GUESS",
 ] as const;
 
 // POST /api/rooms/[code]/action, the single entry point for every game

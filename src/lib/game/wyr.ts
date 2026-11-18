@@ -12,9 +12,9 @@ import {
   endGame,
   GameError,
   isHostActor,
-  shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload, TeamId } from "./types";
 
@@ -62,8 +62,8 @@ async function handleStart(ctx: Ctx) {
   if (error || !pool || pool.length === 0)
     throw new GameError(500, "No questions available");
 
-  const count = Math.min(ctx.session.settings.questionCount || 10, pool.length);
-  const questions = shuffle(pool)
+  const count = Math.min(ctx.session.settings.questionCount || 10, pool.length + (ctx.session.settings.aiPool?.length ?? 0));
+  const questions = themedPool(ctx.session.settings.aiPool, pool)
     .slice(0, count)
     .map((q) => ({ a: q.option_a, b: q.option_b }));
 

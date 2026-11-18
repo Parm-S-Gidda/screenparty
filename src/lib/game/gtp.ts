@@ -15,6 +15,7 @@ import {
   shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
@@ -58,7 +59,7 @@ async function handleStart(ctx: Ctx) {
     .from("gtp_prompts")
     .select("text, mode");
   if (error || !rows || rows.length === 0) throw new GameError(500, "No prompts available");
-  const prompts = shuffle(rows).slice(0, count).map((r) => ({
+  const prompts = themedPool(ctx.session.settings.aiPool, rows).slice(0, count).map((r) => ({
     text: r.text,
     mode: r.mode as "prompt" | "fill_blank",
   }));
@@ -214,6 +215,18 @@ async function handleGuess(ctx: Ctx, guessedPlayerId: string) {
 
 async function handleForceReveal(ctx: Ctx) {
   assertHost(ctx);
+  // time's up on writing: guess what's in, or skip a prompt nobody answered
+  if (ctx.session.current_state === "GTP_ANSWERING") {
+    const { count } = await ctx.admin
+      .from("gtp_answers")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", ctx.session.id)
+      .eq("prompt_index", ctx.session.current_question_index);
+    if ((count ?? 0) > 0) await startGuessingPhase(ctx, 0);
+    else if (ctx.session.current_question_index + 1 >= ctx.session.question_count) await endGame(ctx);
+    else await updateSession(ctx, { current_state: "SCOREBOARD", public_payload: {} });
+    return;
+  }
   assertState(ctx.session, ["GTP_GUESSING"]);
   const promptIndex = ctx.session.current_question_index;
   const answerIndex = ctx.session.public_payload.gtpRound?.answerIndex ?? 0;

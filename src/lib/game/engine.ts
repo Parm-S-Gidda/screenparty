@@ -74,6 +74,12 @@ export function shuffle<T>(items: T[]): T[] {
   return out;
 }
 
+// AI-themed rows (settings.aiPool, same shape as the game's table rows) come
+// first; the built-in pool fills in when there aren't enough of them.
+export function themedPool<T>(aiPool: unknown[] | undefined, rows: T[]): T[] {
+  return [...shuffle((aiPool ?? []) as T[]), ...shuffle(rows)];
+}
+
 export function isHostActor(actor: Actor): boolean {
   return actor.kind === "account_host" || (actor.kind === "player" && actor.isHost);
 }
@@ -287,14 +293,28 @@ async function handleStartGame(ctx: Ctx) {
   assertTeamsReady(players, ctx.session.settings.teamsEnabled);
 
   const settings = ctx.session.settings;
-  const table = settings.packSource === "custom" ? "custom_pack_questions" : "pack_questions";
-  let query = ctx.admin
-    .from(table)
-    .select("question_text, correct_answer, accepted_answers, difficulty")
-    .eq("pack_id", settings.packId);
-  if (settings.difficulty !== "mixed") query = query.eq("difficulty", settings.difficulty);
-  const { data: pool, error } = await query;
-  if (error) throw new GameError(500, error.message);
+  type Q = { question_text: string; correct_answer: string; accepted_answers: string[]; difficulty: string };
+  let pool: Q[] | null;
+  if (settings.packSource === "store") {
+    // store packs keep each trivia question as one jsonb row
+    const { data, error } = await ctx.admin
+      .from("store_pack_items")
+      .select("data")
+      .eq("pack_id", settings.packId)
+      .eq("game_type", "buzz_trivia");
+    if (error) throw new GameError(500, error.message);
+    pool = (data ?? []).map((r) => r.data as Q).filter((q) => settings.difficulty === "mixed" || q.difficulty === settings.difficulty);
+  } else {
+    const table = settings.packSource === "custom" ? "custom_pack_questions" : "pack_questions";
+    let query = ctx.admin
+      .from(table)
+      .select("question_text, correct_answer, accepted_answers, difficulty")
+      .eq("pack_id", settings.packId);
+    if (settings.difficulty !== "mixed") query = query.eq("difficulty", settings.difficulty);
+    const { data, error } = await query;
+    if (error) throw new GameError(500, error.message);
+    pool = data;
+  }
   if (!pool || pool.length === 0) throw new GameError(400, "No questions available for these settings");
 
   // random sample without replacement

@@ -12,9 +12,9 @@ import {
   endGame,
   GameError,
   isHostActor,
-  shuffle,
   updateSession,
   type Ctx,
+  themedPool,
 } from "./engine";
 import type { GameAction, PublicPayload } from "./types";
 
@@ -58,7 +58,7 @@ async function handleStart(ctx: Ctx) {
   if (error || !rows || rows.length < CHAIN_LENGTH + 1)
     throw new GameError(500, "Not enough items available");
 
-  const picked = shuffle(rows).slice(0, CHAIN_LENGTH + 1).map((r) => ({
+  const picked = themedPool(ctx.session.settings.aiPool, rows).slice(0, CHAIN_LENGTH + 1).map((r) => ({
     label: r.label,
     value: Number(r.value),
     unit: r.unit,

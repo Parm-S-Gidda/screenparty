@@ -3,6 +3,7 @@
 // Shared building blocks for the game setup screens (host/new). One shell,
 // one launch bar, and three controls: choice cards, option chips and toggles.
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { BackLink } from "@/components/cartoon/BackLink";
 import { GamePreview } from "@/components/public/GamePreview";
@@ -11,6 +12,8 @@ import { LIMITS, PLAN_LABELS, type PlanTier } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { playerRange } from "@/lib/playerRange";
 import { TUTORIALS } from "@/lib/tutorials";
+import { PackArt } from "@/components/store/PackArt";
+import type { OwnedPackOption } from "@/lib/store";
 
 export function SetupShell({
   gameType,
@@ -18,6 +21,7 @@ export function SetupShell({
   desc,
   error,
   busy,
+  busyLabel = "Opening room…",
   disabled,
   onLaunch,
   maxPlayers,
@@ -28,6 +32,7 @@ export function SetupShell({
   desc: React.ReactNode;
   error: string | null;
   busy: boolean;
+  busyLabel?: string;
   disabled?: boolean;
   onLaunch: () => void;
   maxPlayers: number;
@@ -79,7 +84,7 @@ export function SetupShell({
             Room for {maxPlayers} {maxPlayers === 1 ? "player" : "players"}
           </p>
           <button type="button" onClick={onLaunch} disabled={busy || disabled} className="btn-rough order-1 px-10 py-3.5 text-2xl sm:order-2">
-            {busy ? "Opening room…" : "Open the room"}
+            {busy ? busyLabel : "Open the room"}
           </button>
         </div>
       </div>
@@ -103,6 +108,136 @@ export function SetupSection({ title, hint, children }: { title: string; hint?: 
       </div>
       <div>{children}</div>
     </section>
+  );
+}
+
+/**
+ * "AI theme" panel: type a topic and AI writes the game's content around it.
+ * Paid only: on the free plan it stays visible but greyed, with a way to the
+ * plans. `children` holds game-specific extras (trivia's count + write button).
+ */
+export function AiThemeSection({
+  locked,
+  topic,
+  onTopic,
+  placeholder,
+  hint,
+  status,
+  children,
+}: {
+  locked: boolean;
+  topic: string;
+  onTopic: (v: string) => void;
+  placeholder: string;
+  hint: string;
+  status?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="panel-paper panel-grain p-5 md:p-6" aria-label="AI theme">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl" style={{ color: "var(--ink)" }}>
+            AI theme
+          </h2>
+          <p className="font-hand text-base leading-snug" style={{ color: "var(--ink-label)" }}>
+            {hint}
+          </p>
+        </div>
+        <span className="chip shrink-0" style={locked ? undefined : { background: "var(--mustard)", color: "var(--ink)" }}>
+          {locked ? "Paid plans" : "✦ AI"}
+        </span>
+      </div>
+      <div className={cn("flex flex-col gap-3", locked && "pointer-events-none select-none opacity-45")} inert={locked}>
+        <input
+          aria-label="Theme"
+          className="font-hand h-12 w-full rounded-xl border-[3px] border-[var(--ink)] bg-[var(--card-white)] px-3 text-lg text-[var(--ink)] outline-none placeholder:text-[var(--ink)]/35 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--mustard)]"
+          placeholder={placeholder}
+          value={topic}
+          onChange={(e) => onTopic(e.target.value)}
+          maxLength={100}
+          disabled={locked}
+        />
+        {children}
+      </div>
+      {locked ? (
+        <a href="/account#plans-heading" className="link-label mt-2" style={{ color: "var(--ink)" }}>
+          Upgrade to unlock AI themes →
+        </a>
+      ) : (
+        status && (
+          <p role="status" className="font-hand mt-2 text-base" style={{ color: "var(--ink-label)" }}>
+            {status}
+          </p>
+        )
+      )}
+    </section>
+  );
+}
+
+/** Owned packs from the store as radio cards; "" means the standard mix. */
+export function OwnedPackPicker({
+  packs,
+  value,
+  onChange,
+  unit,
+}: {
+  packs: OwnedPackOption[];
+  value: string;
+  onChange: (id: string) => void;
+  unit: string;
+}) {
+  if (packs.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-1 rounded-xl border-[3px] border-dashed px-4 py-6 text-center" style={{ borderColor: "rgba(34,31,48,0.35)" }}>
+        <p className="font-display text-lg" style={{ color: "var(--ink)" }}>No store packs yet</p>
+        <p className="font-hand max-w-sm text-base" style={{ color: "var(--ink-body)" }}>
+          Themed packs like Halloween or 90s Throwback work in every game.
+        </p>
+        <Link href="/store" className="link-label" style={{ color: "var(--ink)" }}>Browse the pack store →</Link>
+      </div>
+    );
+  }
+  const options = [{ id: "", title: "Standard mix", count: 0 } as const, ...packs];
+  return (
+    <div className="flex flex-col gap-3">
+      <div role="radiogroup" aria-label="Pack" className="grid gap-3 sm:grid-cols-2">
+        {options.map((p) => {
+          const on = value === p.id;
+          return (
+            <button
+              key={p.id || "standard"}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onChange(p.id)}
+              className="flex min-h-16 items-center gap-3 overflow-hidden rounded-xl border-[3px] p-2 pr-4 text-left transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--mustard)]"
+              style={{
+                borderColor: "var(--ink)",
+                background: on ? "var(--ink)" : "var(--card-white)",
+                boxShadow: on ? "none" : "3px 3px 0 rgba(0,0,0,0.35)",
+                transform: on ? "translate(2px, 2px)" : undefined,
+              }}
+            >
+              {"art" in p ? (
+                <PackArt art={p.art} color={p.color} accent={p.accent} className="h-12 w-12 shrink-0 rounded-lg border-2 border-[var(--ink)]" />
+              ) : (
+                <span className="font-display flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed text-xl" style={{ borderColor: on ? "var(--cream)" : "var(--ink)", color: on ? "var(--cream)" : "var(--ink)" }}>
+                  ★
+                </span>
+              )}
+              <span className="flex min-w-0 flex-col">
+                <span className="font-display truncate text-lg leading-tight" style={{ color: on ? "var(--cream)" : "var(--ink)" }}>{p.title}</span>
+                <span className="font-score text-xs uppercase tracking-[0.12em]" style={{ color: on ? "var(--cream-muted)" : "var(--ink-label)" }}>
+                  {p.id ? `${p.count} ${unit}` : "Our built-in content"}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <Link href="/store" className="link-label self-start" style={{ color: "var(--ink)" }}>Get more packs in the store →</Link>
+    </div>
   );
 }
 

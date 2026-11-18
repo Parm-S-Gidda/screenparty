@@ -1,5 +1,7 @@
 "use client";
 
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
+import { DoneCheck } from "@/components/cartoon/DoneCheck";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Panel, TapedLabel } from "@/components/cartoon/Panel";
@@ -32,6 +34,8 @@ export function GtpAnsweringView({ state }: { state: RoomStateResponse }) {
         )}
       </Panel>
 
+      <PhaseTimerBar state={state} />
+
       <div className="font-hand text-xl opacity-70">
         {submittedIds.size} / {players.length} answered
       </div>
@@ -42,7 +46,7 @@ export function GtpAnsweringView({ state }: { state: RoomStateResponse }) {
             <Mascot avatarId={p.avatarId} size={50} animate={false} />
             <span className="font-hand text-sm" style={{ color: "var(--cream)" }}>{p.username}</span>
             {submittedIds.has(p.id) && (
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs" style={{ background: "var(--teal)", color: "#fff" }}>✓</span>
+              <DoneCheck />
             )}
           </div>
         ))}
@@ -82,6 +86,8 @@ export function GtpGuessingView({
           &ldquo;{guessing.answerText}&rdquo;
         </p>
       </Panel>
+
+      <PhaseTimerBar state={state} />
 
       <div className="font-hand text-xl opacity-70">{guessesIn} / {guessersNeeded} guessed</div>
 

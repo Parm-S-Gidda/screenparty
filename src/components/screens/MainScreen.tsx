@@ -30,7 +30,7 @@ import { StampPop } from "@/components/cartoon/Stamp";
 import { RoughButton } from "@/components/cartoon/RoughButton";
 import { Mascot, type MascotExpression } from "@/components/cartoon/Mascot";
 import { PlayerStand } from "@/components/cartoon/PlayerStand";
-import { TimerProp } from "@/components/cartoon/TimerProp";
+import { PhaseTimerBar } from "@/components/cartoon/TimerBar";
 import {
   Burst,
   DoodleStar,
@@ -70,7 +70,7 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
   // how-to-play demo runs on this screen between "Start the show!" and round 1
   const [inTutorial, setInTutorial] = useState(false);
   const isVirtual = state?.session?.hostMode === "virtual";
-  const { caption, skip, speaking } = useVirtualHostDriver(code, state, isOwner && isVirtual);
+  const { caption, skip } = useVirtualHostDriver(code, state, isOwner && isVirtual);
 
   const act = useCallback(
     async (action: GameAction) => {
@@ -258,7 +258,7 @@ export function MainScreen({ code, isOwner }: { code: string; isOwner: boolean }
                   }}
                 />
               ) : (
-                <StateView state={state} isOwner={isOwner} act={act} speaking={speaking} onStart={start} />
+                <StateView state={state} isOwner={isOwner} act={act} onStart={start} />
               )}
             </motion.div>
           </AnimatePresence>
@@ -313,13 +313,11 @@ export function StateView({
   state,
   isOwner,
   act,
-  speaking,
   onStart,
 }: {
   state: RoomStateResponse;
   isOwner: boolean;
   act: (action: GameAction) => Promise<void>;
-  speaking?: boolean;
   onStart: () => void;
 }) {
   const session = state.session!;
@@ -342,7 +340,7 @@ export function StateView({
       return <WyrChoosingView state={state} isOwner={isOwner} act={act} />;
     // Most Likely To
     case "MLT_VOTING":
-      return <MltVotingView state={state} isOwner={isOwner} act={act} speaking={speaking} />;
+      return <MltVotingView state={state} isOwner={isOwner} act={act} />;
     // Higher or Lower
     case "HOL_VOTING":
       return <HolVotingView state={state} isOwner={isOwner} act={act} />;
@@ -736,14 +734,8 @@ function BuzzOpenView({
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
-      <div className="relative w-full max-w-4xl">
-        <QuestionBoard text={payload.question?.text ?? ""} label={`Question ${session.questionIndex + 1}`} />
-        {autoSkip && secondsLeft !== null && (
-          <div className="absolute -right-4 -top-10 rotate-6 md:-right-10">
-            <TimerProp seconds={secondsLeft} size={92} />
-          </div>
-        )}
-      </div>
+      <QuestionBoard text={payload.question?.text ?? ""} label={`Question ${session.questionIndex + 1}`} />
+      <PhaseTimerBar state={state} />
 
       {wrongPlayer && (
         <StampPop key={payload.lastResult!.at} color="red" sfx="wrong">

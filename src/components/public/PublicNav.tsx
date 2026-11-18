@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: "How It Works", href: "/how-it-works" },
   { label: "Virtual Host", href: "/virtual-host" },
   { label: "Occasions", href: "/occasions" },
+  { label: "Store", href: "/store" },
   { label: "Pricing", href: "/pricing" },
 ];
 
